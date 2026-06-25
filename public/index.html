@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#3b82f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CardScanner" />
+  <meta name="description" content="Take a photo of any sports card to get an instant price estimate powered by AI" />
+  <title>CardScanner</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <span class="logo">🃏</span>
+    <h1>CardScanner</h1>
+  </header>
+
+  <main>
+    <section class="camera-section">
+      <div class="preview-area">
+        <video id="video" playsinline autoplay muted></video>
+        <canvas id="canvas"></canvas>
+        <img id="preview-img" alt="Captured card" />
+
+        <div id="placeholder" class="placeholder">
+          <span class="icon">📸</span>
+          <p>Open your camera or upload a photo of a sports card to get an AI-powered price estimate</p>
+        </div>
+
+        <div id="scan-overlay" class="scan-overlay">
+          <div class="scan-frame"></div>
+        </div>
+
+        <div id="analyzing-overlay" class="analyzing-overlay">
+          <div class="spinner"></div>
+          <span class="analyzing-text">Analyzing card...</span>
+        </div>
+      </div>
+
+      <div class="camera-controls">
+        <button id="start-camera-btn" class="btn btn-primary">
+          📷 Open Camera
+        </button>
+
+        <button id="capture-btn" class="btn btn-capture" style="display:none" aria-label="Capture photo">
+          ⬤
+        </button>
+
+        <button id="retake-btn" class="btn btn-secondary" style="display:none">
+          ↩ Retake
+        </button>
+
+        <button id="upload-btn" class="btn btn-secondary">
+          ⬆ Upload
+          <input id="file-input" type="file" accept="image/*" capture="environment" />
+        </button>
+      </div>
+
+      <div style="padding: 0 1rem 1rem;">
+        <button id="analyze-btn" class="btn btn-primary" style="width:100%" disabled>
+          ✨ Analyze Card
+        </button>
+      </div>
+    </section>
+
+    <section id="results-section" class="results-section">
+      <div class="card-result">
+        <div class="result-header">
+          <div class="card-name">
+            <div id="card-player" class="card-player"></div>
+            <div id="card-meta" class="card-meta"></div>
+          </div>
+          <span id="confidence-badge" class="confidence-badge"></span>
+        </div>
+
+        <div class="price-display">
+          <div class="price-label">Estimated Market Value</div>
+          <div id="price-range" class="price-range"></div>
+          <div id="price-summary" class="price-summary"></div>
+        </div>
+
+        <div id="attributes-section" class="attributes-section" style="display:none">
+          <div id="attributes-list"></div>
+        </div>
+
+        <div class="condition-section">
+          <div class="condition-label">Condition</div>
+          <div id="condition-text"></div>
+        </div>
+      </div>
+
+      <button id="scan-again-btn" class="btn btn-secondary scan-again-btn">
+        🔄 Scan Another Card
+      </button>
+    </section>
+
+    <div id="error-card" class="error-card">
+      <div class="error-icon">⚠️</div>
+      <p id="error-msg"></p>
+    </div>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
