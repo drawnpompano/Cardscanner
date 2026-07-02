@@ -10,13 +10,13 @@ const startCameraBtn = document.getElementById('start-camera-btn');
 const captureBtn = document.getElementById('capture-btn');
 const retakeBtn = document.getElementById('retake-btn');
 const analyzeBtn = document.getElementById('analyze-btn');
-const fileInput = document.getElementById('file-input');
 const resultsSection = document.getElementById('results-section');
 const errorCard = document.getElementById('error-card');
 const errorMsg = document.getElementById('error-msg');
 const scanAgainBtn = document.getElementById('scan-again-btn');
 const describeBtn = document.getElementById('describe-btn');
 const cardDescription = document.getElementById('card-description');
+
 
 let stream = null;
 let capturedImageData = null;
@@ -84,31 +84,6 @@ function retake() {
   startCamera();
 }
 
-function handleFileUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  stopCamera();
-  cameraActive = false;
-
-  capturedMediaType = file.type || 'image/jpeg';
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const dataUrl = ev.target.result;
-    capturedImageData = dataUrl.split(',')[1];
-    previewImg.src = dataUrl;
-    previewImg.style.display = 'block';
-    video.style.display = 'none';
-    placeholder.style.display = 'none';
-    scanOverlay.classList.remove('active');
-    startCameraBtn.style.display = 'none';
-    captureBtn.style.display = 'none';
-    retakeBtn.style.display = 'inline-flex';
-    analyzeBtn.disabled = false;
-    hideResults();
-  };
-  reader.readAsDataURL(file);
-  fileInput.value = '';
-}
 
 async function analyzeCard() {
   if (!capturedImageData) return;
@@ -270,7 +245,6 @@ startCameraBtn.addEventListener('click', startCamera);
 captureBtn.addEventListener('click', captureFrame);
 retakeBtn.addEventListener('click', retake);
 analyzeBtn.addEventListener('click', analyzeCard);
-fileInput.addEventListener('change', handleFileUpload);
 scanAgainBtn.addEventListener('click', resetToStart);
 describeBtn.addEventListener('click', lookUpByDescription);
 
