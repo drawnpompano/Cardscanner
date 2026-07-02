@@ -4,15 +4,12 @@ const path = require('path');
 
 async function fetchCardImage(query) {
   try {
-    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch&num=1`;
+    const url = `https://www.bing.com/images/search?q=${encodeURIComponent(query)}&first=1`;
     const resp = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
+      headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15' },
     });
     const html = await resp.text();
-    const match = html.match(/"ou":"(https?:\/\/[^"]+)"/);
+    const match = html.match(/"murl":"([^"]+)"/);
     if (!match) return null;
     const imgUrl = match[1];
     const imgResp = await fetch(imgUrl, { signal: AbortSignal.timeout(5000) });
