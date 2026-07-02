@@ -1,5 +1,67 @@
 'use strict';
 
+// --- Password gate ---
+let sessionPassword = sessionStorage.getItem('cs_password') || '';
+
+function updateScansDisplay(remaining) {
+  const el = document.getElementById('scans-remaining');
+  if (el) el.textContent = `${remaining} scan${remaining === 1 ? '' : 's'} left`;
+}
+
+async function submitPassword() {
+  const input = document.getElementById('password-input');
+  const errEl = document.getElementById('password-error');
+  const pw = input.value.trim();
+  if (!pw) return;
+
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Invalid password';
+      errEl.style.display = 'block';
+      return;
+    }
+    sessionPassword = pw;
+    sessionStorage.setItem('cs_password', pw);
+    showApp(data.remaining);
+  } catch {
+    errEl.textContent = 'Could not connect. Try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+function showApp(remaining) {
+  document.getElementById('password-gate').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+  updateScansDisplay(remaining);
+}
+
+// Check existing session password on load
+if (sessionPassword) {
+  fetch('/api/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: sessionPassword }),
+  })
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.success) showApp(data.remaining);
+      else { sessionStorage.removeItem('cs_password'); sessionPassword = ''; }
+    })
+    .catch(() => {});
+}
+
+document.getElementById('password-submit').addEventListener('click', submitPassword);
+document.getElementById('password-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitPassword();
+});
+
+// --- Main app ---
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const placeholder = document.getElementById('placeholder');
@@ -124,12 +186,13 @@ async function analyzeCard() {
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ frontData: capturedFront, backData: capturedBack }),
+      body: JSON.stringify({ frontData: capturedFront, backData: capturedBack, password: sessionPassword }),
     });
 
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
+    if (data.remaining != null) updateScansDisplay(data.remaining);
     if (data.card) {
       displayResults(data.card);
     } else if (data.raw) {
@@ -248,12 +311,13 @@ async function lookUpByDescription() {
     const res = await fetch('/api/lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: text }),
+      body: JSON.stringify({ description: text, password: sessionPassword }),
     });
 
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
+    if (data.remaining != null) updateScansDisplay(data.remaining);
     if (data.card) {
       displayResults(data.card, data.image);
     } else {

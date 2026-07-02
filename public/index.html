@@ -13,12 +13,24 @@
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
+  <div id="password-gate" class="password-gate">
+    <div class="password-box">
+      <span class="logo" style="font-size:2.5rem">🃏</span>
+      <h1 style="font-size:1.4rem;font-weight:700">CardScanner</h1>
+      <p class="password-hint">Enter your password to continue</p>
+      <input id="password-input" class="password-input" type="password" placeholder="Password" autocomplete="current-password" />
+      <button id="password-submit" class="btn btn-primary" style="width:100%">Enter</button>
+      <p id="password-error" class="password-error" style="display:none"></p>
+    </div>
+  </div>
+
   <header>
     <span class="logo">🃏</span>
     <h1>CardScanner <span class="version" id="app-version"></span></h1>
+    <span id="scans-remaining" class="scans-remaining"></span>
   </header>
 
-  <main>
+  <main style="display:none" id="main-content">
     <section class="describe-section">
       <div class="describe-header">
         <span class="describe-label">Describe the card</span>
