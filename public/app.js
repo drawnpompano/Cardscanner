@@ -145,9 +145,18 @@ async function analyzeCard() {
   }
 }
 
-function displayResults(card) {
+function displayResults(card, image) {
   resultsSection.classList.add('visible');
   errorCard.classList.remove('visible');
+
+  const cardImageSection = document.getElementById('card-image-section');
+  const cardResultImg = document.getElementById('card-result-img');
+  if (image && image.data) {
+    cardResultImg.src = `data:${image.contentType};base64,${image.data}`;
+    cardImageSection.style.display = 'block';
+  } else {
+    cardImageSection.style.display = 'none';
+  }
 
   document.getElementById('card-player').textContent = card.player || 'Unknown Player';
   document.getElementById('card-meta').textContent = [card.year, card.brand, card.cardNumber ? `#${card.cardNumber}` : null]
@@ -245,7 +254,7 @@ async function lookUpByDescription() {
     if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
     if (data.card) {
-      displayResults(data.card);
+      displayResults(data.card, data.image);
     } else {
       showError('Could not find pricing data for that description. Try adding more detail.');
     }
