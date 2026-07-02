@@ -157,14 +157,6 @@ function displayResults(card) {
   badge.textContent = confidence;
   badge.className = `confidence-badge confidence-${confidence}`;
 
-  const low = card.valueRange?.low ?? 0;
-  const high = card.valueRange?.high ?? 0;
-  const currency = card.valueRange?.currency || 'USD';
-  const fmt = (v) => v >= 1000 ? `$${(v/1000).toFixed(1)}K` : `$${v}`;
-  document.getElementById('price-range').textContent = low === high ? fmt(low) : `${fmt(low)} – ${fmt(high)}`;
-
-  document.getElementById('price-summary').textContent = card.valueSummary || '';
-
   const attrsEl = document.getElementById('attributes-list');
   attrsEl.innerHTML = '';
   const attrs = card.attributes || [];
@@ -180,7 +172,29 @@ function displayResults(card) {
     document.getElementById('attributes-section').style.display = 'none';
   }
 
-  document.getElementById('condition-text').textContent = card.condition || 'Not assessed';
+  const fmt = (v) => v == null ? 'N/A' : v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v}`;
+  const grades = [
+    { label: 'Raw (Ungraded)', key: 'raw' },
+    { label: 'PSA 7', key: 'psa7' },
+    { label: 'PSA 8', key: 'psa8' },
+    { label: 'PSA 9', key: 'psa9' },
+    { label: 'PSA 10', key: 'psa10' },
+  ];
+
+  const tbody = document.getElementById('price-table-body');
+  tbody.innerHTML = '';
+  grades.forEach(({ label, key }) => {
+    const p = card.prices?.[key];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${label}</td>
+      <td>${fmt(p?.low)}</td>
+      <td>${fmt(p?.high)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('pricing-notes').textContent = card.pricingNotes || '';
   resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 

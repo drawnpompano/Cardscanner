@@ -33,30 +33,27 @@ app.post('/api/analyze', async (req, res) => {
             },
             {
               type: 'text',
-              text: `You are a sports card expert and pricing specialist. Analyze this sports card image and provide:
+              text: `You are a sports card expert and pricing specialist. Identify this sports card and provide current market prices by PSA grade.
 
-1. Card identification: player name, year, brand/set, card number (if visible), and any special attributes (rookie card, autograph, parallel, etc.)
-2. Card condition assessment based on what you can see (corners, edges, surface, centering)
-3. Approximate current market value range in USD based on recent sales
-
-Format your response as JSON with this structure:
+Return ONLY a JSON object with this exact structure:
 {
   "player": "Player Name",
   "year": "Year",
   "brand": "Brand/Set Name",
   "cardNumber": "Card # or null",
-  "attributes": ["list", "of", "special", "attributes"],
-  "condition": "Condition grade and notes",
-  "valueRange": {
-    "low": 0,
-    "high": 0,
-    "currency": "USD"
+  "attributes": ["rookie card", "autograph", etc — only notable attributes],
+  "prices": {
+    "raw": { "low": 0, "high": 0 },
+    "psa7": { "low": 0, "high": 0 },
+    "psa8": { "low": 0, "high": 0 },
+    "psa9": { "low": 0, "high": 0 },
+    "psa10": { "low": 0, "high": 0 }
   },
-  "valueSummary": "Brief explanation of value and factors affecting it",
+  "pricingNotes": "Brief note on what drives value for this card",
   "confidence": "high/medium/low"
 }
 
-If you cannot identify this as a sports card, set all fields to null and explain in valueSummary.`,
+Use recent eBay sold listings and PSA pop report data to estimate prices. Do not assess the condition of the card in the image. If you cannot identify this as a sports card, return all fields as null and explain in pricingNotes.`,
             },
           ],
         },

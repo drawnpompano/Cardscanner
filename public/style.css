@@ -311,13 +311,44 @@ main {
   font-weight: 500;
 }
 
-.condition-section {
-  padding: 0.75rem 1.25rem;
+.price-table-section {
+  padding: 1rem 1.25rem;
   border-top: 1px solid var(--border);
-  font-size: 0.85rem;
 }
 
-.condition-label { color: var(--muted); font-size: 0.75rem; margin-bottom: 0.25rem; }
+.price-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.price-table th {
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 0.5rem 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.price-table td {
+  padding: 0.6rem 0.5rem 0.6rem 0;
+  border-bottom: 1px solid rgba(51,65,85,0.5);
+  color: var(--text);
+}
+
+.price-table tr:last-child td { border-bottom: none; }
+
+.price-table td:first-child { color: var(--muted); }
+.price-table td:not(:first-child) { color: var(--success); font-weight: 600; }
+
+.pricing-notes {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
 
 .error-card {
   background: rgba(239,68,68,0.1);
