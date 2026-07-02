@@ -15,6 +15,8 @@ const resultsSection = document.getElementById('results-section');
 const errorCard = document.getElementById('error-card');
 const errorMsg = document.getElementById('error-msg');
 const scanAgainBtn = document.getElementById('scan-again-btn');
+const describeBtn = document.getElementById('describe-btn');
+const cardDescription = document.getElementById('card-description');
 
 let stream = null;
 let capturedImageData = null;
@@ -224,12 +226,44 @@ function resetToStart() {
   hideResults();
 }
 
+async function lookUpByDescription() {
+  const text = cardDescription.value.trim();
+  if (!text) return;
+
+  analyzingOverlay.classList.add('active');
+  describeBtn.disabled = true;
+  hideResults();
+
+  try {
+    const res = await fetch('/api/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: text }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
+
+    if (data.card) {
+      displayResults(data.card);
+    } else {
+      showError('Could not find pricing data for that description. Try adding more detail.');
+    }
+  } catch (err) {
+    showError(err.message || 'Failed to look up card. Please try again.');
+  } finally {
+    analyzingOverlay.classList.remove('active');
+    describeBtn.disabled = false;
+  }
+}
+
 startCameraBtn.addEventListener('click', startCamera);
 captureBtn.addEventListener('click', captureFrame);
 retakeBtn.addEventListener('click', retake);
 analyzeBtn.addEventListener('click', analyzeCard);
 fileInput.addEventListener('change', handleFileUpload);
 scanAgainBtn.addEventListener('click', resetToStart);
+describeBtn.addEventListener('click', lookUpByDescription);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

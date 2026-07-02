@@ -217,6 +217,37 @@ main {
 
 .analyzing-text { font-size: 0.95rem; color: var(--text); font-weight: 500; }
 
+/* Manual description */
+.describe-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.describe-header { display: flex; flex-direction: column; gap: 0.2rem; }
+.describe-label { font-size: 0.9rem; font-weight: 600; }
+.describe-hint { font-size: 0.75rem; color: var(--muted); }
+
+.describe-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.85rem;
+  resize: none;
+  line-height: 1.5;
+}
+
+.describe-input::placeholder { color: var(--muted); }
+.describe-input:focus { outline: none; border-color: var(--accent); }
+
 /* Results */
 .results-section {
   display: none;
