@@ -37,6 +37,14 @@ header .logo {
   font-size: 1.5rem;
 }
 
+.version {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--muted);
+  vertical-align: middle;
+  -webkit-text-fill-color: var(--muted);
+}
+
 header h1 {
   font-size: 1.2rem;
   font-weight: 700;
