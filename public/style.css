@@ -248,6 +248,24 @@ main {
 .describe-input::placeholder { color: var(--muted); }
 .describe-input:focus { outline: none; border-color: var(--accent); }
 
+.section-divider {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-divider::before, .section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 /* Results */
 .results-section {
   display: none;

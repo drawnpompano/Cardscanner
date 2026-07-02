@@ -19,6 +19,19 @@
   </header>
 
   <main>
+    <section class="describe-section">
+      <div class="describe-header">
+        <span class="describe-label">Describe the card</span>
+        <span class="describe-hint">e.g. "2003 Topps Chrome LeBron James Rookie #111"</span>
+      </div>
+      <textarea id="card-description" class="describe-input" placeholder="Year, brand, player, card number, any special attributes…" rows="3"></textarea>
+      <button id="describe-btn" class="btn btn-primary" style="width:100%">
+        🔍 Look Up by Description
+      </button>
+    </section>
+
+    <div class="section-divider">or scan a photo</div>
+
     <section class="camera-section">
       <div class="preview-area">
         <video id="video" playsinline autoplay muted></video>
@@ -64,17 +77,6 @@
           ✨ Analyze Card
         </button>
       </div>
-    </section>
-
-    <section class="describe-section">
-      <div class="describe-header">
-        <span class="describe-label">Or describe the card manually</span>
-        <span class="describe-hint">e.g. "2003 Topps Chrome LeBron James Rookie #111"</span>
-      </div>
-      <textarea id="card-description" class="describe-input" placeholder="Year, brand, player, card number, any special attributes…" rows="3"></textarea>
-      <button id="describe-btn" class="btn btn-primary" style="width:100%">
-        🔍 Look Up by Description
-      </button>
     </section>
 
     <section id="results-section" class="results-section">
