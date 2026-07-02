@@ -33,14 +33,38 @@
     <div class="section-divider">or scan a photo</div>
 
     <section class="camera-section">
+      <div class="scan-steps">
+        <div class="scan-step" id="step-front">
+          <div class="step-dot active"></div>
+          <span>Front</span>
+        </div>
+        <div class="scan-step-line"></div>
+        <div class="scan-step" id="step-back">
+          <div class="step-dot"></div>
+          <span>Back</span>
+        </div>
+      </div>
+
+      <div id="scan-instruction" class="scan-instruction">Scan the <strong>front</strong> of the card</div>
+
       <div class="preview-area">
         <video id="video" playsinline autoplay muted></video>
         <canvas id="canvas"></canvas>
-        <img id="preview-img" alt="Captured card" />
+
+        <div class="side-previews">
+          <div class="side-preview" id="front-preview-box">
+            <img id="front-preview-img" alt="Front of card" style="display:none" />
+            <div class="side-preview-label">Front</div>
+          </div>
+          <div class="side-preview" id="back-preview-box">
+            <img id="back-preview-img" alt="Back of card" style="display:none" />
+            <div class="side-preview-label">Back</div>
+          </div>
+        </div>
 
         <div id="placeholder" class="placeholder">
           <span class="icon">📸</span>
-          <p>Open your camera or upload a photo of a sports card to get an AI-powered price estimate</p>
+          <p>Open your camera to scan both sides of the card</p>
         </div>
 
         <div id="scan-overlay" class="scan-overlay">
@@ -65,7 +89,6 @@
         <button id="retake-btn" class="btn btn-secondary" style="display:none">
           ↩ Retake
         </button>
-
       </div>
 
       <div style="padding: 0 1rem 1rem;">

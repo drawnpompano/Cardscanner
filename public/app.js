@@ -2,7 +2,6 @@
 
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
-const previewImg = document.getElementById('preview-img');
 const placeholder = document.getElementById('placeholder');
 const scanOverlay = document.getElementById('scan-overlay');
 const analyzingOverlay = document.getElementById('analyzing-overlay');
@@ -16,12 +15,29 @@ const errorMsg = document.getElementById('error-msg');
 const scanAgainBtn = document.getElementById('scan-again-btn');
 const describeBtn = document.getElementById('describe-btn');
 const cardDescription = document.getElementById('card-description');
-
+const frontPreviewImg = document.getElementById('front-preview-img');
+const backPreviewImg = document.getElementById('back-preview-img');
+const scanInstruction = document.getElementById('scan-instruction');
 
 let stream = null;
-let capturedImageData = null;
-let capturedMediaType = 'image/jpeg';
-let cameraActive = false;
+let capturedFront = null;
+let capturedBack = null;
+let scanStep = 'front';
+
+function setStep(step) {
+  scanStep = step;
+  const frontDot = document.querySelector('#step-front .step-dot');
+  const backDot = document.querySelector('#step-back .step-dot');
+  if (step === 'front') {
+    scanInstruction.innerHTML = 'Scan the <strong>front</strong> of the card';
+    frontDot.className = 'step-dot active';
+    backDot.className = 'step-dot';
+  } else {
+    scanInstruction.innerHTML = 'Now scan the <strong>back</strong> of the card';
+    frontDot.className = 'step-dot done';
+    backDot.className = 'step-dot active';
+  }
+}
 
 async function startCamera() {
   try {
@@ -31,16 +47,15 @@ async function startCamera() {
     });
     video.srcObject = stream;
     await video.play();
-    cameraActive = true;
     placeholder.style.display = 'none';
     video.style.display = 'block';
     scanOverlay.classList.add('active');
     startCameraBtn.style.display = 'none';
     captureBtn.style.display = 'flex';
-    retakeBtn.style.display = 'none';
+    retakeBtn.style.display = scanStep === 'back' ? 'inline-flex' : 'none';
     analyzeBtn.disabled = true;
   } catch (err) {
-    showError('Camera access denied or unavailable. Please upload an image instead.');
+    showError('Camera access denied or unavailable. Please use the description lookup instead.');
   }
 }
 
@@ -49,22 +64,29 @@ function captureFrame() {
   const h = video.videoHeight;
   canvas.width = w;
   canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, w, h);
+  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  const imageData = dataUrl.split(',')[1];
 
-  capturedMediaType = 'image/jpeg';
-  capturedImageData = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-
-  previewImg.src = canvas.toDataURL('image/jpeg', 0.85);
-  previewImg.style.display = 'block';
-  video.style.display = 'none';
-  scanOverlay.classList.remove('active');
-
-  stopCamera();
-  cameraActive = false;
-  captureBtn.style.display = 'none';
-  retakeBtn.style.display = 'inline-flex';
-  analyzeBtn.disabled = false;
+  const sidePreviews = document.querySelector('.side-previews');
+  if (scanStep === 'front') {
+    capturedFront = imageData;
+    frontPreviewImg.src = dataUrl;
+    frontPreviewImg.style.display = 'block';
+    sidePreviews.classList.add('visible');
+    setStep('back');
+    retakeBtn.style.display = 'inline-flex';
+  } else {
+    capturedBack = imageData;
+    backPreviewImg.src = dataUrl;
+    backPreviewImg.style.display = 'block';
+    stopCamera();
+    video.style.display = 'none';
+    scanOverlay.classList.remove('active');
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'inline-flex';
+    analyzeBtn.disabled = false;
+  }
 }
 
 function stopCamera() {
@@ -75,18 +97,24 @@ function stopCamera() {
 }
 
 function retake() {
-  capturedImageData = null;
-  previewImg.style.display = 'none';
-  previewImg.src = '';
-  retakeBtn.style.display = 'none';
-  analyzeBtn.disabled = true;
   hideResults();
-  startCamera();
+  if (scanStep === 'back') {
+    capturedBack = null;
+    backPreviewImg.style.display = 'none';
+    backPreviewImg.src = '';
+    analyzeBtn.disabled = true;
+    startCamera();
+  } else {
+    capturedFront = null;
+    frontPreviewImg.style.display = 'none';
+    frontPreviewImg.src = '';
+    retakeBtn.style.display = 'none';
+    startCamera();
+  }
 }
 
-
 async function analyzeCard() {
-  if (!capturedImageData) return;
+  if (!capturedFront || !capturedBack) return;
 
   analyzingOverlay.classList.add('active');
   analyzeBtn.disabled = true;
@@ -96,14 +124,11 @@ async function analyzeCard() {
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageData: capturedImageData, mediaType: capturedMediaType }),
+      body: JSON.stringify({ frontData: capturedFront, backData: capturedBack }),
     });
 
     const data = await res.json();
-
-    if (!res.ok || data.error) {
-      throw new Error(data.error || 'Server error');
-    }
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
     if (data.card) {
       displayResults(data.card);
@@ -135,8 +160,7 @@ function displayResults(card, image) {
 
   document.getElementById('card-player').textContent = card.player || 'Unknown Player';
   document.getElementById('card-meta').textContent = [card.year, card.brand, card.cardNumber ? `#${card.cardNumber}` : null]
-    .filter(Boolean)
-    .join(' · ');
+    .filter(Boolean).join(' · ');
 
   const confidence = card.confidence || 'low';
   const badge = document.getElementById('confidence-badge');
@@ -172,11 +196,7 @@ function displayResults(card, image) {
   grades.forEach(({ label, key }) => {
     const p = card.prices?.[key];
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${label}</td>
-      <td>${fmt(p?.low)}</td>
-      <td>${fmt(p?.high)}</td>
-    `;
+    tr.innerHTML = `<td>${label}</td><td>${fmt(p?.low)}</td><td>${fmt(p?.high)}</td>`;
     tbody.appendChild(tr);
   });
 
@@ -197,9 +217,13 @@ function showError(msg) {
 }
 
 function resetToStart() {
-  capturedImageData = null;
-  previewImg.style.display = 'none';
-  previewImg.src = '';
+  stopCamera();
+  capturedFront = null;
+  capturedBack = null;
+  frontPreviewImg.style.display = 'none';
+  frontPreviewImg.src = '';
+  backPreviewImg.style.display = 'none';
+  backPreviewImg.src = '';
   video.style.display = 'none';
   placeholder.style.display = 'flex';
   scanOverlay.classList.remove('active');
@@ -207,6 +231,8 @@ function resetToStart() {
   captureBtn.style.display = 'none';
   retakeBtn.style.display = 'none';
   analyzeBtn.disabled = true;
+  document.querySelector('.side-previews').classList.remove('visible');
+  setStep('front');
   hideResults();
 }
 

@@ -32,9 +32,9 @@ const client = new Anthropic();
 app.get('/api/version', (req, res) => res.json({ version }));
 
 app.post('/api/analyze', async (req, res) => {
-  const { imageData, mediaType } = req.body;
-  if (!imageData) {
-    return res.status(400).json({ error: 'No image data provided' });
+  const { frontData, backData } = req.body;
+  if (!frontData || !backData) {
+    return res.status(400).json({ error: 'Both front and back images are required' });
   }
 
   try {
@@ -47,16 +47,20 @@ app.post('/api/analyze', async (req, res) => {
           role: 'user',
           content: [
             {
+              type: 'text',
+              text: 'Here are the front and back of a sports card:',
+            },
+            {
               type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType || 'image/jpeg',
-                data: imageData,
-              },
+              source: { type: 'base64', media_type: 'image/jpeg', data: frontData },
+            },
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: 'image/jpeg', data: backData },
             },
             {
               type: 'text',
-              text: `You are a sports card expert and pricing specialist. Identify this sports card and provide current market prices by PSA grade.
+              text: `You are a sports card expert and pricing specialist. Using both the front and back of this card, identify it and provide current market prices by PSA grade.
 
 Return ONLY a JSON object with this exact structure:
 {
@@ -76,7 +80,7 @@ Return ONLY a JSON object with this exact structure:
   "confidence": "high/medium/low"
 }
 
-Use recent eBay sold listings and PSA pop report data to estimate prices. Do not assess the condition of the card in the image. If you cannot identify this as a sports card, return all fields as null and explain in pricingNotes.`,
+Use recent eBay sold listings and PSA pop report data to estimate prices. Do not assess the condition of the card. If you cannot identify this as a sports card, return all fields as null and explain in pricingNotes.`,
             },
           ],
         },
