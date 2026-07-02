@@ -251,3 +251,11 @@ describeBtn.addEventListener('click', lookUpByDescription);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
+
+fetch('/api/version')
+  .then((r) => r.json())
+  .then(({ version }) => {
+    const el = document.getElementById('app-version');
+    if (el) el.textContent = `v${version}`;
+  })
+  .catch(() => {});

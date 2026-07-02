@@ -1,6 +1,7 @@
 const express = require('express');
 const Anthropic = require('@anthropic-ai/sdk');
 const path = require('path');
+const { version } = require('./package.json');
 
 async function fetchCardImage(query) {
   try {
@@ -27,6 +28,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const client = new Anthropic();
+
+app.get('/api/version', (req, res) => res.json({ version }));
 
 app.post('/api/analyze', async (req, res) => {
   const { imageData, mediaType } = req.body;
