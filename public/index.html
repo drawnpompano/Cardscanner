@@ -28,134 +28,169 @@
     <span id="scans-remaining" class="scans-remaining"></span>
   </header>
 
-  <main style="display:none" id="main-content">
-    <section class="describe-section">
-      <div class="describe-header">
-        <span class="describe-label">Describe the card</span>
-        <span class="describe-hint">e.g. "2003 Topps Chrome LeBron James Rookie #111"</span>
-      </div>
-      <textarea id="card-description" class="describe-input" placeholder="Year, brand, player, card number, any special attributes…" rows="3"></textarea>
-      <button id="describe-btn" class="btn btn-primary" style="width:100%">
-        🔍 Look Up by Description
-      </button>
-    </section>
+  <div id="main-content" style="display:none">
 
-    <div class="section-divider">or scan a photo</div>
+    <!-- Tab bar -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" id="tab-scanner">Scanner</button>
+      <button class="tab-btn" id="tab-history">History</button>
+    </nav>
 
-    <section class="camera-section">
-      <div class="scan-mode-toggle">
-        <button class="mode-btn active" id="mode-both">Both Sides</button>
-        <button class="mode-btn" id="mode-one">One Side</button>
-      </div>
-
-      <div id="scan-steps" class="scan-steps">
-        <div class="scan-step" id="step-front">
-          <div class="step-dot active"></div>
-          <span>Front</span>
+    <!-- Scanner tab -->
+    <main id="scanner-tab">
+      <section class="describe-section">
+        <div class="describe-header">
+          <span class="describe-label">Describe the card</span>
+          <span class="describe-hint">e.g. "2003 Topps Chrome LeBron James Rookie #111"</span>
         </div>
-        <div class="scan-step-line"></div>
-        <div class="scan-step" id="step-back">
-          <div class="step-dot"></div>
-          <span>Back</span>
+        <textarea id="card-description" class="describe-input" placeholder="Year, brand, player, card number, any special attributes…" rows="3"></textarea>
+        <button id="describe-btn" class="btn btn-primary" style="width:100%">
+          🔍 Look Up by Description
+        </button>
+      </section>
+
+      <div class="section-divider">or scan a photo</div>
+
+      <section class="camera-section">
+        <div class="scan-mode-toggle">
+          <button class="mode-btn active" id="mode-both">Both Sides</button>
+          <button class="mode-btn" id="mode-one">One Side</button>
         </div>
-      </div>
 
-      <div id="scan-instruction" class="scan-instruction">Scan the <strong>front</strong> of the card</div>
-
-      <div class="preview-area">
-        <video id="video" playsinline autoplay muted></video>
-        <canvas id="canvas"></canvas>
-
-        <div class="side-previews">
-          <div class="side-preview" id="front-preview-box">
-            <img id="front-preview-img" alt="Front of card" style="display:none" />
-            <div class="side-preview-label">Front</div>
+        <div id="scan-steps" class="scan-steps">
+          <div class="scan-step" id="step-front">
+            <div class="step-dot active"></div>
+            <span>Front</span>
           </div>
-          <div class="side-preview" id="back-preview-box">
-            <img id="back-preview-img" alt="Back of card" style="display:none" />
-            <div class="side-preview-label">Back</div>
+          <div class="scan-step-line"></div>
+          <div class="scan-step" id="step-back">
+            <div class="step-dot"></div>
+            <span>Back</span>
           </div>
         </div>
 
-        <div id="placeholder" class="placeholder">
-          <span class="icon">📸</span>
-          <p id="placeholder-text">Open your camera to scan both sides of the card</p>
-        </div>
+        <div id="scan-instruction" class="scan-instruction">Scan the <strong>front</strong> of the card</div>
 
-        <div id="scan-overlay" class="scan-overlay">
-          <div class="scan-frame"></div>
-        </div>
+        <div class="preview-area">
+          <video id="video" playsinline autoplay muted></video>
+          <canvas id="canvas"></canvas>
 
-        <div id="analyzing-overlay" class="analyzing-overlay">
-          <div class="spinner"></div>
-          <span class="analyzing-text">Analyzing card...</span>
-        </div>
-      </div>
-
-      <div class="camera-controls">
-        <button id="start-camera-btn" class="btn btn-primary">
-          📷 Open Camera
-        </button>
-
-        <button id="capture-btn" class="btn btn-capture" style="display:none" aria-label="Capture photo">
-          ⬤
-        </button>
-
-        <button id="retake-btn" class="btn btn-secondary" style="display:none">
-          ↩ Retake
-        </button>
-      </div>
-
-      <div style="padding: 0 1rem 1rem;">
-        <button id="analyze-btn" class="btn btn-primary" style="width:100%" disabled>
-          ✨ Analyze Card
-        </button>
-      </div>
-    </section>
-
-    <section id="results-section" class="results-section">
-      <div class="card-result">
-        <div id="card-image-section" class="card-image-section" style="display:none">
-          <img id="card-result-img" class="card-result-img" alt="Card image" />
-        </div>
-
-        <div class="result-header">
-          <div class="card-name">
-            <div id="card-player" class="card-player"></div>
-            <div id="card-meta" class="card-meta"></div>
+          <div class="side-previews">
+            <div class="side-preview" id="front-preview-box">
+              <img id="front-preview-img" alt="Front of card" style="display:none" />
+              <div class="side-preview-label">Front</div>
+            </div>
+            <div class="side-preview" id="back-preview-box">
+              <img id="back-preview-img" alt="Back of card" style="display:none" />
+              <div class="side-preview-label">Back</div>
+            </div>
           </div>
-          <span id="confidence-badge" class="confidence-badge"></span>
+
+          <div id="placeholder" class="placeholder">
+            <span class="icon">📸</span>
+            <p id="placeholder-text">Open your camera to scan both sides of the card</p>
+          </div>
+
+          <div id="scan-overlay" class="scan-overlay">
+            <div class="scan-frame"></div>
+          </div>
+
+          <div id="analyzing-overlay" class="analyzing-overlay">
+            <div class="spinner"></div>
+            <span class="analyzing-text">Analyzing card...</span>
+          </div>
         </div>
 
-        <div id="attributes-section" class="attributes-section" style="display:none">
-          <div id="attributes-list"></div>
+        <div class="camera-controls">
+          <button id="start-camera-btn" class="btn btn-primary">
+            📷 Open Camera
+          </button>
+          <button id="capture-btn" class="btn btn-capture" style="display:none" aria-label="Capture photo">⬤</button>
+          <button id="retake-btn" class="btn btn-secondary" style="display:none">↩ Retake</button>
         </div>
 
-        <div class="price-table-section">
-          <table class="price-table">
-            <thead>
-              <tr>
-                <th>Grade</th>
-                <th>Low</th>
-                <th>High</th>
-              </tr>
-            </thead>
-            <tbody id="price-table-body"></tbody>
-          </table>
-          <div id="pricing-notes" class="pricing-notes"></div>
+        <div style="padding: 0 1rem 1rem;">
+          <button id="analyze-btn" class="btn btn-primary" style="width:100%" disabled>
+            ✨ Analyze Card
+          </button>
         </div>
+      </section>
+
+      <section id="results-section" class="results-section">
+        <div class="card-result">
+          <div id="card-image-section" class="card-image-section" style="display:none">
+            <img id="card-result-img" class="card-result-img" alt="Card image" />
+          </div>
+          <div class="result-header">
+            <div class="card-name">
+              <div id="card-player" class="card-player"></div>
+              <div id="card-meta" class="card-meta"></div>
+            </div>
+            <span id="confidence-badge" class="confidence-badge"></span>
+          </div>
+          <div id="attributes-section" class="attributes-section" style="display:none">
+            <div id="attributes-list"></div>
+          </div>
+          <div class="price-table-section">
+            <table class="price-table">
+              <thead>
+                <tr><th>Grade</th><th>Low</th><th>High</th></tr>
+              </thead>
+              <tbody id="price-table-body"></tbody>
+            </table>
+            <div id="pricing-notes" class="pricing-notes"></div>
+          </div>
+        </div>
+        <button id="scan-again-btn" class="btn btn-secondary scan-again-btn">
+          🔄 Scan Another Card
+        </button>
+      </section>
+
+      <div id="error-card" class="error-card">
+        <div class="error-icon">⚠️</div>
+        <p id="error-msg"></p>
       </div>
+    </main>
 
-      <button id="scan-again-btn" class="btn btn-secondary scan-again-btn">
-        🔄 Scan Another Card
-      </button>
-    </section>
+    <!-- History tab -->
+    <main id="history-tab" style="display:none">
+      <div id="history-empty" class="history-empty">
+        <div class="history-empty-icon">🕐</div>
+        <p>No history yet. Your scans and lookups will appear here.</p>
+      </div>
+      <div id="history-list" class="history-list"></div>
 
-    <div id="error-card" class="error-card">
-      <div class="error-icon">⚠️</div>
-      <p id="error-msg"></p>
-    </div>
-  </main>
+      <!-- History result detail -->
+      <section id="history-result" class="results-section" style="display:none">
+        <button id="history-back-btn" class="btn btn-secondary" style="margin-bottom:0.5rem">← Back to History</button>
+        <div class="card-result">
+          <div id="h-card-image-section" class="card-image-section" style="display:none">
+            <img id="h-card-result-img" class="card-result-img" alt="Card image" />
+          </div>
+          <div class="result-header">
+            <div class="card-name">
+              <div id="h-card-player" class="card-player"></div>
+              <div id="h-card-meta" class="card-meta"></div>
+            </div>
+            <span id="h-confidence-badge" class="confidence-badge"></span>
+          </div>
+          <div id="h-attributes-section" class="attributes-section" style="display:none">
+            <div id="h-attributes-list"></div>
+          </div>
+          <div class="price-table-section">
+            <table class="price-table">
+              <thead>
+                <tr><th>Grade</th><th>Low</th><th>High</th></tr>
+              </thead>
+              <tbody id="h-price-table-body"></tbody>
+            </table>
+            <div id="h-pricing-notes" class="pricing-notes"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
 
   <script src="/app.js"></script>
 </body>

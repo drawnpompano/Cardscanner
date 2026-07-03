@@ -39,9 +39,9 @@ function showApp(remaining) {
   document.getElementById('password-gate').style.display = 'none';
   document.getElementById('main-content').style.display = 'block';
   updateScansDisplay(remaining);
+  renderHistoryList();
 }
 
-// Check existing session password on load
 if (sessionPassword) {
   fetch('/api/auth', {
     method: 'POST',
@@ -60,6 +60,156 @@ document.getElementById('password-submit').addEventListener('click', submitPassw
 document.getElementById('password-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') submitPassword();
 });
+
+// --- Tab bar ---
+document.getElementById('tab-scanner').addEventListener('click', () => switchTab('scanner'));
+document.getElementById('tab-history').addEventListener('click', () => {
+  switchTab('history');
+  renderHistoryList();
+});
+
+function switchTab(tab) {
+  document.getElementById('tab-scanner').classList.toggle('active', tab === 'scanner');
+  document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+  document.getElementById('scanner-tab').style.display = tab === 'scanner' ? '' : 'none';
+  document.getElementById('history-tab').style.display = tab === 'history' ? '' : 'none';
+  if (tab === 'history') showHistoryList();
+}
+
+// --- History storage ---
+function historyKey() {
+  return `cs_history_${sessionPassword}`;
+}
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(historyKey()) || '[]'); } catch { return []; }
+}
+
+function saveHistory(items) {
+  localStorage.setItem(historyKey(), JSON.stringify(items.slice(0, 50)));
+}
+
+function addToHistory(card, image, source) {
+  const items = loadHistory();
+  items.unshift({
+    id: Date.now(),
+    ts: new Date().toISOString(),
+    source, // 'scan' or 'description'
+    card,
+    image: image || null,
+  });
+  saveHistory(items);
+}
+
+// --- History UI ---
+function showHistoryList() {
+  document.getElementById('history-list').style.display = 'block';
+  document.getElementById('history-result').style.display = 'none';
+}
+
+function renderHistoryList() {
+  const items = loadHistory();
+  const listEl = document.getElementById('history-list');
+  const emptyEl = document.getElementById('history-empty');
+
+  listEl.innerHTML = '';
+  if (items.length === 0) {
+    emptyEl.style.display = 'flex';
+    listEl.style.display = 'none';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  listEl.style.display = 'block';
+
+  items.forEach((item) => {
+    const card = item.card;
+    const date = new Date(item.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const rawLow = card.prices?.raw?.low;
+    const psa10High = card.prices?.psa10?.high;
+    const fmt = (v) => v == null ? '' : v >= 1000 ? `$${(v/1000).toFixed(1)}K` : `$${v}`;
+
+    const el = document.createElement('div');
+    el.className = 'history-item';
+    el.innerHTML = `
+      <div class="history-item-info">
+        <div class="history-item-player">${card.player || 'Unknown'}</div>
+        <div class="history-item-meta">${[card.year, card.brand].filter(Boolean).join(' · ')}</div>
+        <div class="history-item-date">${date} · ${item.source === 'scan' ? '📷 Scan' : '🔍 Description'}</div>
+      </div>
+      <div class="history-item-price">
+        ${rawLow != null ? `<span class="history-price-label">Raw</span><span>${fmt(rawLow)}</span>` : ''}
+        ${psa10High != null ? `<span class="history-price-label">PSA 10</span><span>${fmt(psa10High)}</span>` : ''}
+      </div>
+    `;
+    el.addEventListener('click', () => showHistoryResult(item));
+    listEl.appendChild(el);
+  });
+}
+
+function showHistoryResult(item) {
+  document.getElementById('history-list').style.display = 'none';
+  document.getElementById('history-empty').style.display = 'none';
+  const resultEl = document.getElementById('history-result');
+  resultEl.style.display = 'block';
+
+  const { card, image } = item;
+
+  const imgSection = document.getElementById('h-card-image-section');
+  const imgEl = document.getElementById('h-card-result-img');
+  if (image && image.data) {
+    imgEl.src = `data:${image.contentType};base64,${image.data}`;
+    imgSection.style.display = 'block';
+  } else {
+    imgSection.style.display = 'none';
+  }
+
+  document.getElementById('h-card-player').textContent = card.player || 'Unknown Player';
+  document.getElementById('h-card-meta').textContent = [card.year, card.brand, card.cardNumber ? `#${card.cardNumber}` : null]
+    .filter(Boolean).join(' · ');
+
+  const badge = document.getElementById('h-confidence-badge');
+  badge.textContent = card.confidence || 'low';
+  badge.className = `confidence-badge confidence-${card.confidence || 'low'}`;
+
+  const attrsEl = document.getElementById('h-attributes-list');
+  attrsEl.innerHTML = '';
+  const attrs = card.attributes || [];
+  if (attrs.length > 0) {
+    document.getElementById('h-attributes-section').style.display = 'flex';
+    attrs.forEach((a) => {
+      const span = document.createElement('span');
+      span.className = 'attr-tag';
+      span.textContent = a;
+      attrsEl.appendChild(span);
+    });
+  } else {
+    document.getElementById('h-attributes-section').style.display = 'none';
+  }
+
+  const fmt = (v) => v == null ? 'N/A' : v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v}`;
+  const grades = [
+    { label: 'Raw (Ungraded)', key: 'raw' },
+    { label: 'PSA 7', key: 'psa7' },
+    { label: 'PSA 8', key: 'psa8' },
+    { label: 'PSA 9', key: 'psa9' },
+    { label: 'PSA 10', key: 'psa10' },
+  ];
+
+  const tbody = document.getElementById('h-price-table-body');
+  tbody.innerHTML = '';
+  grades.forEach(({ label, key }) => {
+    const p = card.prices?.[key];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${label}</td><td>${fmt(p?.low)}</td><td>${fmt(p?.high)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('h-pricing-notes').textContent = card.pricingNotes || '';
+  resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('history-back-btn').addEventListener('click', showHistoryList);
 
 // --- Main app ---
 const video = document.getElementById('video');
@@ -85,9 +235,8 @@ let stream = null;
 let capturedFront = null;
 let capturedBack = null;
 let scanStep = 'front';
-let scanMode = 'both'; // 'both' or 'one'
+let scanMode = 'both';
 
-// --- Scan mode toggle ---
 document.getElementById('mode-both').addEventListener('click', () => setScanMode('both'));
 document.getElementById('mode-one').addEventListener('click', () => setScanMode('one'));
 
@@ -132,7 +281,7 @@ async function startCamera() {
     captureBtn.style.display = 'flex';
     retakeBtn.style.display = scanStep === 'back' ? 'inline-flex' : 'none';
     analyzeBtn.disabled = true;
-  } catch (err) {
+  } catch {
     showError('Camera access denied or unavailable. Please use the description lookup instead.');
   }
 }
@@ -148,7 +297,6 @@ function captureFrame() {
 
   const sidePreviews = document.querySelector('.side-previews');
   if (scanMode === 'one' || scanStep === 'back') {
-    // Final capture
     if (scanMode === 'one') {
       capturedFront = imageData;
       frontPreviewImg.src = dataUrl;
@@ -166,7 +314,6 @@ function captureFrame() {
     retakeBtn.style.display = 'inline-flex';
     analyzeBtn.disabled = false;
   } else {
-    // First capture (front, two-sided mode)
     capturedFront = imageData;
     frontPreviewImg.src = dataUrl;
     frontPreviewImg.style.display = 'block';
@@ -224,6 +371,7 @@ async function analyzeCard() {
 
     if (data.remaining != null) updateScansDisplay(data.remaining);
     if (data.card) {
+      addToHistory(data.card, null, 'scan');
       displayResults(data.card);
     } else if (data.raw) {
       showError('Could not parse card data. Raw response: ' + data.raw.substring(0, 200));
@@ -349,6 +497,7 @@ async function lookUpByDescription() {
 
     if (data.remaining != null) updateScansDisplay(data.remaining);
     if (data.card) {
+      addToHistory(data.card, data.image || null, 'description');
       displayResults(data.card, data.image);
     } else {
       showError('Could not find pricing data for that description. Try adding more detail.');
