@@ -45,7 +45,12 @@
     <div class="section-divider">or scan a photo</div>
 
     <section class="camera-section">
-      <div class="scan-steps">
+      <div class="scan-mode-toggle">
+        <button class="mode-btn active" id="mode-both">Both Sides</button>
+        <button class="mode-btn" id="mode-one">One Side</button>
+      </div>
+
+      <div id="scan-steps" class="scan-steps">
         <div class="scan-step" id="step-front">
           <div class="step-dot active"></div>
           <span>Front</span>
@@ -76,7 +81,7 @@
 
         <div id="placeholder" class="placeholder">
           <span class="icon">📸</span>
-          <p>Open your camera to scan both sides of the card</p>
+          <p id="placeholder-text">Open your camera to scan both sides of the card</p>
         </div>
 
         <div id="scan-overlay" class="scan-overlay">

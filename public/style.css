@@ -114,6 +114,31 @@ main {
   gap: 1.25rem;
 }
 
+.scan-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem 0;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mode-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
 .scan-steps {
   display: flex;
   align-items: center;

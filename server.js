@@ -97,12 +97,27 @@ app.post('/api/auth', (req, res) => {
 
 app.post('/api/analyze', authMiddleware, async (req, res) => {
   const { frontData, backData } = req.body;
-  if (!frontData || !backData) {
-    return res.status(400).json({ error: 'Both front and back images are required' });
+  if (!frontData) {
+    return res.status(400).json({ error: 'At least a front image is required' });
   }
 
   consumeUse(req.password);
   const remaining = req.remaining - 1;
+
+  const imageContent = backData
+    ? [
+        { type: 'text', text: 'Here are the front and back of a sports card:' },
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: frontData } },
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: backData } },
+      ]
+    : [
+        { type: 'text', text: 'Here is the front of a sports card:' },
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: frontData } },
+      ];
+
+  const promptText = backData
+    ? 'Using both the front and back of this card, identify it and provide current market prices by PSA grade.'
+    : 'Using the front of this card, identify it and provide current market prices by PSA grade.';
 
   try {
     const stream = await client.messages.stream({
@@ -113,12 +128,10 @@ app.post('/api/analyze', authMiddleware, async (req, res) => {
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'Here are the front and back of a sports card:' },
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: frontData } },
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: backData } },
+            ...imageContent,
             {
               type: 'text',
-              text: `You are a sports card expert and pricing specialist. Using both the front and back of this card, identify it and provide current market prices by PSA grade.
+              text: `You are a sports card expert and pricing specialist. ${promptText}
 
 Return ONLY a JSON object with this exact structure:
 {
@@ -144,6 +157,7 @@ Use recent eBay sold listings and PSA pop report data to estimate prices. Do not
         },
       ],
     });
+
 
     const message = await stream.finalMessage();
     let responseText = '';

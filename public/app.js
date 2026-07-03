@@ -85,6 +85,22 @@ let stream = null;
 let capturedFront = null;
 let capturedBack = null;
 let scanStep = 'front';
+let scanMode = 'both'; // 'both' or 'one'
+
+// --- Scan mode toggle ---
+document.getElementById('mode-both').addEventListener('click', () => setScanMode('both'));
+document.getElementById('mode-one').addEventListener('click', () => setScanMode('one'));
+
+function setScanMode(mode) {
+  scanMode = mode;
+  document.getElementById('mode-both').classList.toggle('active', mode === 'both');
+  document.getElementById('mode-one').classList.toggle('active', mode === 'one');
+  document.getElementById('scan-steps').style.display = mode === 'both' ? 'flex' : 'none';
+  document.getElementById('placeholder-text').textContent =
+    mode === 'both' ? 'Open your camera to scan both sides of the card'
+                    : 'Open your camera to scan the front of the card';
+  resetToStart();
+}
 
 function setStep(step) {
   scanStep = step;
@@ -131,23 +147,32 @@ function captureFrame() {
   const imageData = dataUrl.split(',')[1];
 
   const sidePreviews = document.querySelector('.side-previews');
-  if (scanStep === 'front') {
-    capturedFront = imageData;
-    frontPreviewImg.src = dataUrl;
-    frontPreviewImg.style.display = 'block';
-    sidePreviews.classList.add('visible');
-    setStep('back');
-    retakeBtn.style.display = 'inline-flex';
-  } else {
-    capturedBack = imageData;
-    backPreviewImg.src = dataUrl;
-    backPreviewImg.style.display = 'block';
+  if (scanMode === 'one' || scanStep === 'back') {
+    // Final capture
+    if (scanMode === 'one') {
+      capturedFront = imageData;
+      frontPreviewImg.src = dataUrl;
+      frontPreviewImg.style.display = 'block';
+      sidePreviews.classList.add('visible');
+    } else {
+      capturedBack = imageData;
+      backPreviewImg.src = dataUrl;
+      backPreviewImg.style.display = 'block';
+    }
     stopCamera();
     video.style.display = 'none';
     scanOverlay.classList.remove('active');
     captureBtn.style.display = 'none';
     retakeBtn.style.display = 'inline-flex';
     analyzeBtn.disabled = false;
+  } else {
+    // First capture (front, two-sided mode)
+    capturedFront = imageData;
+    frontPreviewImg.src = dataUrl;
+    frontPreviewImg.style.display = 'block';
+    sidePreviews.classList.add('visible');
+    setStep('back');
+    retakeBtn.style.display = 'inline-flex';
   }
 }
 
@@ -176,7 +201,8 @@ function retake() {
 }
 
 async function analyzeCard() {
-  if (!capturedFront || !capturedBack) return;
+  if (!capturedFront) return;
+  if (scanMode === 'both' && !capturedBack) return;
 
   analyzingOverlay.classList.add('active');
   analyzeBtn.disabled = true;
@@ -186,7 +212,11 @@ async function analyzeCard() {
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ frontData: capturedFront, backData: capturedBack, password: sessionPassword }),
+      body: JSON.stringify({
+        frontData: capturedFront,
+        backData: scanMode === 'both' ? capturedBack : null,
+        password: sessionPassword,
+      }),
     });
 
     const data = await res.json();
