@@ -332,12 +332,18 @@ function stopCamera() {
 
 function retake() {
   hideResults();
-  if (scanStep === 'back') {
+  // If the back has already been captured (analyze ready), retaking means starting over from the front.
+  // If we're mid-flow on the back step (camera live), only clear the back.
+  if (scanStep === 'back' && capturedBack !== null) {
+    // Both sides done — full reset, restart from front
+    resetToStart();
+    startCamera();
+  } else if (scanStep === 'back') {
+    // Camera is live on back step — clear back and keep going
     capturedBack = null;
     backPreviewImg.style.display = 'none';
     backPreviewImg.src = '';
     analyzeBtn.disabled = true;
-    startCamera();
   } else {
     capturedFront = null;
     frontPreviewImg.style.display = 'none';
