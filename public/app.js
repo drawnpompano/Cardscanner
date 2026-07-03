@@ -334,16 +334,10 @@ function retake() {
   hideResults();
   // If the back has already been captured (analyze ready), retaking means starting over from the front.
   // If we're mid-flow on the back step (camera live), only clear the back.
-  if (scanStep === 'back' && capturedBack !== null) {
-    // Both sides done — full reset, restart from front
+  // In both-sides mode, retake always goes back to front regardless of step
+  if (scanMode === 'both') {
     resetToStart();
     startCamera();
-  } else if (scanStep === 'back') {
-    // Camera is live on back step — clear back and keep going
-    capturedBack = null;
-    backPreviewImg.style.display = 'none';
-    backPreviewImg.src = '';
-    analyzeBtn.disabled = true;
   } else {
     capturedFront = null;
     frontPreviewImg.style.display = 'none';
