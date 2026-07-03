@@ -123,7 +123,6 @@ app.post('/api/analyze', authMiddleware, async (req, res) => {
     const stream = await client.messages.stream({
       model: 'claude-opus-4-8',
       max_tokens: 1024,
-      temperature: 0,
       messages: [
         {
           role: 'user',
@@ -191,7 +190,6 @@ app.post('/api/lookup', authMiddleware, async (req, res) => {
     const stream = await client.messages.stream({
       model: 'claude-opus-4-8',
       max_tokens: 1024,
-      temperature: 0,
       messages: [
         {
           role: 'user',
