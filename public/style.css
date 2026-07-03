@@ -693,6 +693,20 @@ main {
   line-height: 1.5;
 }
 
+.ebay-link {
+  display: block;
+  margin: 1rem 0 0;
+  padding: 0.6rem 1rem;
+  background: var(--surface2);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+.ebay-link:hover { opacity: 0.85; }
+
 .error-card {
   background: rgba(239,68,68,0.1);
   border: 1px solid rgba(239,68,68,0.3);

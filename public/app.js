@@ -89,14 +89,14 @@ function saveHistory(items) {
   localStorage.setItem(historyKey(), JSON.stringify(items.slice(0, 50)));
 }
 
-function addToHistory(card, image, source) {
+function addToHistory(card, ebayUrl, source) {
   const items = loadHistory();
   items.unshift({
     id: Date.now(),
     ts: new Date().toISOString(),
     source, // 'scan' or 'description'
     card,
-    image: image || null,
+    ebayUrl: ebayUrl || null,
   });
   saveHistory(items);
 }
@@ -153,15 +153,14 @@ function showHistoryResult(item) {
   const resultEl = document.getElementById('history-result');
   resultEl.style.display = 'block';
 
-  const { card, image } = item;
+  const { card, ebayUrl } = item;
 
-  const imgSection = document.getElementById('h-card-image-section');
-  const imgEl = document.getElementById('h-card-result-img');
-  if (image && image.data) {
-    imgEl.src = `data:${image.contentType};base64,${image.data}`;
-    imgSection.style.display = 'block';
+  const hEbayLink = document.getElementById('h-ebay-link');
+  if (ebayUrl) {
+    hEbayLink.href = ebayUrl;
+    hEbayLink.style.display = 'block';
   } else {
-    imgSection.style.display = 'none';
+    hEbayLink.style.display = 'none';
   }
 
   document.getElementById('h-card-player').textContent = card.player || 'Unknown Player';
@@ -372,7 +371,7 @@ async function analyzeCard() {
     if (data.remaining != null) updateScansDisplay(data.remaining);
     if (data.card) {
       addToHistory(data.card, null, 'scan');
-      displayResults(data.card);
+      displayResults(data.card, null);
     } else if (data.raw) {
       showError('Could not parse card data. Raw response: ' + data.raw.substring(0, 200));
     } else {
@@ -386,17 +385,16 @@ async function analyzeCard() {
   }
 }
 
-function displayResults(card, image) {
+function displayResults(card, ebayUrl) {
   resultsSection.classList.add('visible');
   errorCard.classList.remove('visible');
 
-  const cardImageSection = document.getElementById('card-image-section');
-  const cardResultImg = document.getElementById('card-result-img');
-  if (image && image.data) {
-    cardResultImg.src = `data:${image.contentType};base64,${image.data}`;
-    cardImageSection.style.display = 'block';
+  const ebayLink = document.getElementById('ebay-link');
+  if (ebayUrl) {
+    ebayLink.href = ebayUrl;
+    ebayLink.style.display = 'block';
   } else {
-    cardImageSection.style.display = 'none';
+    ebayLink.style.display = 'none';
   }
 
   document.getElementById('card-player').textContent = card.player || 'Unknown Player';
@@ -497,8 +495,8 @@ async function lookUpByDescription() {
 
     if (data.remaining != null) updateScansDisplay(data.remaining);
     if (data.card) {
-      addToHistory(data.card, data.image || null, 'description');
-      displayResults(data.card, data.image);
+      addToHistory(data.card, data.ebayUrl || null, 'description');
+      displayResults(data.card, data.ebayUrl);
     } else {
       showError('Could not find pricing data for that description. Try adding more detail.');
     }

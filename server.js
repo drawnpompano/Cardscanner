@@ -55,28 +55,6 @@ function authMiddleware(req, res, next) {
   next();
 }
 
-// --- Image fetch ---
-
-async function fetchCardImage(query) {
-  try {
-    const url = `https://www.bing.com/images/search?q=${encodeURIComponent(query)}&first=1`;
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15' },
-    });
-    const html = await resp.text();
-    const match = html.match(/"murl":"([^"]+)"/);
-    if (!match) return null;
-    const imgUrl = match[1];
-    const imgResp = await fetch(imgUrl, { signal: AbortSignal.timeout(5000) });
-    if (!imgResp.ok) return null;
-    const buffer = await imgResp.arrayBuffer();
-    const contentType = imgResp.headers.get('content-type') || 'image/jpeg';
-    return { data: Buffer.from(buffer).toString('base64'), contentType };
-  } catch {
-    return null;
-  }
-}
-
 // --- Express app ---
 
 const app = express();
@@ -231,8 +209,7 @@ Use recent eBay sold listings and PSA pop report data to estimate prices. If the
       const cardData = JSON.parse(jsonMatch[0]);
       const searchQuery = [cardData.year, cardData.brand, cardData.player, cardData.cardNumber ? `#${cardData.cardNumber}` : null, 'sports card']
         .filter(Boolean).join(' ');
-      const image = await fetchCardImage(searchQuery);
-      res.json({ success: true, card: cardData, image, remaining });
+      res.json({ success: true, card: cardData, ebayUrl: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}`, remaining });
     } else {
       res.json({ success: true, card: null, raw: responseText, remaining });
     }
