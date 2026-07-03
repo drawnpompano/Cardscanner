@@ -4,39 +4,6 @@ const path = require('path');
 const fs = require('fs');
 const { version } = require('./package.json');
 
-// --- Card result cache ---
-const CACHE_FILE = path.join(__dirname, 'card-cache.json');
-
-function loadCache() {
-  try {
-    if (fs.existsSync(CACHE_FILE)) return JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
-  } catch {}
-  return {};
-}
-
-function saveCache(cache) {
-  try { fs.writeFileSync(CACHE_FILE, JSON.stringify(cache)); } catch {}
-}
-
-function cacheKey(card) {
-  return [card.player, card.year, card.brand, card.cardNumber]
-    .map((v) => (v || '').toLowerCase().trim())
-    .join('|');
-}
-
-function getCached(card) {
-  const key = cacheKey(card);
-  return key ? loadCache()[key] || null : null;
-}
-
-function setCached(card) {
-  const key = cacheKey(card);
-  if (!key) return;
-  const cache = loadCache();
-  cache[key] = card;
-  saveCache(cache);
-}
-
 // --- Password / usage management ---
 
 const USAGE_FILE = path.join(__dirname, 'usage.json');
@@ -156,7 +123,7 @@ app.post('/api/analyze', authMiddleware, async (req, res) => {
     const stream = await client.messages.stream({
       model: 'claude-opus-4-8',
       max_tokens: 1024,
-      thinking: { type: 'adaptive' },
+      temperature: 0,
       messages: [
         {
           role: 'user',
@@ -200,13 +167,7 @@ Use recent eBay sold listings and PSA pop report data to estimate prices. Do not
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      let cardData = JSON.parse(jsonMatch[0]);
-      const cached = getCached(cardData);
-      if (cached) {
-        cardData = cached;
-      } else {
-        setCached(cardData);
-      }
+      const cardData = JSON.parse(jsonMatch[0]);
       res.json({ success: true, card: cardData, remaining });
     } else {
       res.json({ success: true, card: null, raw: responseText, remaining });
@@ -230,7 +191,7 @@ app.post('/api/lookup', authMiddleware, async (req, res) => {
     const stream = await client.messages.stream({
       model: 'claude-opus-4-8',
       max_tokens: 1024,
-      thinking: { type: 'adaptive' },
+      temperature: 0,
       messages: [
         {
           role: 'user',
@@ -269,13 +230,7 @@ Use recent eBay sold listings and PSA pop report data to estimate prices. If the
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      let cardData = JSON.parse(jsonMatch[0]);
-      const cached = getCached(cardData);
-      if (cached) {
-        cardData = cached;
-      } else {
-        setCached(cardData);
-      }
+      const cardData = JSON.parse(jsonMatch[0]);
       const searchQuery = [cardData.year, cardData.brand, cardData.player, cardData.cardNumber ? `#${cardData.cardNumber}` : null, 'sports card']
         .filter(Boolean).join(' ');
       const image = await fetchCardImage(searchQuery);
