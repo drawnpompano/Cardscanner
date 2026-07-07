@@ -68,7 +68,6 @@ async function fetchEbayPrices(cardData) {
     'SECURITY-APPNAME': process.env.EBAY_APP_ID,
     'RESPONSE-DATA-FORMAT': 'JSON',
     'keywords': query,
-    'categoryId': '212',
     'itemFilter(0).name': 'SoldItemsOnly',
     'itemFilter(0).value': 'true',
     'paginationInput.entriesPerPage': '100',
@@ -77,6 +76,13 @@ async function fetchEbayPrices(cardData) {
   const resp = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${params}`);
   if (!resp.ok) throw new Error(`eBay API error: ${resp.status}`);
   const data = await resp.json();
+
+  const ackValue = data?.findCompletedItemsResponse?.[0]?.ack?.[0];
+  const totalResults = data?.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.['@count'];
+  console.log(`eBay query: "${query}" | ack: ${ackValue} | results: ${totalResults}`);
+  if (ackValue !== 'Success') {
+    console.log('eBay error details:', JSON.stringify(data?.findCompletedItemsResponse?.[0]?.errorMessage));
+  }
 
   const items = data?.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.item || [];
 
