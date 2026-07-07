@@ -73,13 +73,20 @@ async function fetchEbayPrices(cardData) {
     'paginationInput.entriesPerPage': '100',
   });
 
+  console.log(`eBay query: "${query}"`);
+  console.log(`eBay App ID present: ${!!process.env.EBAY_APP_ID}`);
   const resp = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${params}`);
-  if (!resp.ok) throw new Error(`eBay API error: ${resp.status}`);
+  console.log(`eBay response status: ${resp.status}`);
+  if (!resp.ok) {
+    const body = await resp.text();
+    console.log(`eBay error body: ${body.substring(0, 500)}`);
+    throw new Error(`eBay API error: ${resp.status}`);
+  }
   const data = await resp.json();
 
   const ackValue = data?.findCompletedItemsResponse?.[0]?.ack?.[0];
   const totalResults = data?.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.['@count'];
-  console.log(`eBay query: "${query}" | ack: ${ackValue} | results: ${totalResults}`);
+  console.log(`eBay ack: ${ackValue} | results: ${totalResults}`);
   if (ackValue !== 'Success') {
     console.log('eBay error details:', JSON.stringify(data?.findCompletedItemsResponse?.[0]?.errorMessage));
   }
