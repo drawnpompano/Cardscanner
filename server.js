@@ -57,47 +57,66 @@ function authMiddleware(req, res, next) {
 
 // --- eBay price fetch ---
 
+async function getEbayOAuthToken() {
+  const credentials = Buffer.from(`${process.env.EBAY_APP_ID}:${process.env.EBAY_CERT_ID}`).toString('base64');
+  const resp = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials&scope=https%3A%2F%2Fapi.ebay.com%2Foauth%2Fapi_scope',
+  });
+  if (!resp.ok) {
+    const body = await resp.text();
+    console.log(`eBay OAuth error ${resp.status}: ${body.substring(0, 300)}`);
+    throw new Error(`eBay OAuth error: ${resp.status}`);
+  }
+  const data = await resp.json();
+  return data.access_token;
+}
+
 async function fetchEbayPrices(cardData) {
   const { player, year, brand, cardNumber } = cardData;
   const query = [year, brand, player, cardNumber ? `#${cardNumber}` : null]
     .filter(Boolean).join(' ');
 
-  const params = new URLSearchParams({
-    'OPERATION-NAME': 'findCompletedItems',
-    'SERVICE-VERSION': '1.0.0',
-    'SECURITY-APPNAME': process.env.EBAY_APP_ID,
-    'RESPONSE-DATA-FORMAT': 'JSON',
-    'keywords': query,
-    'itemFilter(0).name': 'SoldItemsOnly',
-    'itemFilter(0).value': 'true',
-    'paginationInput.entriesPerPage': '100',
-  });
-
   console.log(`eBay query: "${query}"`);
   console.log(`eBay App ID present: ${!!process.env.EBAY_APP_ID}`);
-  const resp = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${params}`);
-  console.log(`eBay response status: ${resp.status}`);
+  console.log(`eBay Cert ID present: ${!!process.env.EBAY_CERT_ID}`);
+
+  const token = await getEbayOAuthToken();
+
+  const params = new URLSearchParams({
+    q: query,
+    filter: 'buyingOptions:{AUCTION|FIXED_PRICE},conditions:{USED|UNSPECIFIED}',
+    limit: '100',
+    fieldgroups: 'EXTENDED',
+  });
+
+  const resp = await fetch(`https://api.ebay.com/buy/browse/v1/item_summary/search?${params}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+    },
+  });
+
+  console.log(`eBay Browse API status: ${resp.status}`);
   if (!resp.ok) {
     const body = await resp.text();
-    console.log(`eBay error body: ${body.substring(0, 500)}`);
+    console.log(`eBay Browse error: ${body.substring(0, 500)}`);
     throw new Error(`eBay API error: ${resp.status}`);
   }
+
   const data = await resp.json();
-
-  const ackValue = data?.findCompletedItemsResponse?.[0]?.ack?.[0];
-  const totalResults = data?.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.['@count'];
-  console.log(`eBay ack: ${ackValue} | results: ${totalResults}`);
-  if (ackValue !== 'Success') {
-    console.log('eBay error details:', JSON.stringify(data?.findCompletedItemsResponse?.[0]?.errorMessage));
-  }
-
-  const items = data?.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.item || [];
+  const items = data.itemSummaries || [];
+  console.log(`eBay items returned: ${items.length}`);
 
   const buckets = { raw: [], psa7: [], psa8: [], psa9: [], psa10: [] };
 
   for (const item of items) {
-    const title = (item.title?.[0] || '').toLowerCase();
-    const price = parseFloat(item.sellingStatus?.[0]?.convertedCurrentPrice?.[0]?.['__value__'] || 0);
+    const title = (item.title || '').toLowerCase();
+    const price = parseFloat(item.price?.value || 0);
     if (!price) continue;
 
     if (title.includes('psa 10') || title.includes('psa10')) buckets.psa10.push(price);
