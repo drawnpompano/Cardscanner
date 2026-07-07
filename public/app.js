@@ -235,6 +235,16 @@ let capturedFront = null;
 let capturedBack = null;
 let scanStep = 'front';
 let scanMode = 'both';
+let pricingMode = 'ebay';
+
+document.getElementById('pricing-ebay').addEventListener('click', () => setPricingMode('ebay'));
+document.getElementById('pricing-ai').addEventListener('click', () => setPricingMode('ai'));
+
+function setPricingMode(mode) {
+  pricingMode = mode;
+  document.getElementById('pricing-ebay').classList.toggle('active', mode === 'ebay');
+  document.getElementById('pricing-ai').classList.toggle('active', mode === 'ai');
+}
 
 document.getElementById('mode-both').addEventListener('click', () => setScanMode('both'));
 document.getElementById('mode-one').addEventListener('click', () => setScanMode('one'));
@@ -362,6 +372,7 @@ async function analyzeCard() {
         frontData: capturedFront,
         backData: scanMode === 'both' ? capturedBack : null,
         password: sessionPassword,
+        mode: pricingMode,
       }),
     });
 
@@ -487,7 +498,7 @@ async function lookUpByDescription() {
     const res = await fetch('/api/lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: text, password: sessionPassword }),
+      body: JSON.stringify({ description: text, password: sessionPassword, mode: pricingMode }),
     });
 
     const data = await res.json();

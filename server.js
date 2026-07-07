@@ -55,6 +55,96 @@ function authMiddleware(req, res, next) {
   next();
 }
 
+// --- eBay price fetch ---
+
+async function fetchEbayPrices(cardData) {
+  const { player, year, brand, cardNumber } = cardData;
+  const query = [year, brand, player, cardNumber ? `#${cardNumber}` : null]
+    .filter(Boolean).join(' ');
+
+  const params = new URLSearchParams({
+    'OPERATION-NAME': 'findCompletedItems',
+    'SERVICE-VERSION': '1.0.0',
+    'SECURITY-APPNAME': process.env.EBAY_APP_ID,
+    'RESPONSE-DATA-FORMAT': 'JSON',
+    'keywords': query,
+    'categoryId': '212',
+    'itemFilter(0).name': 'SoldItemsOnly',
+    'itemFilter(0).value': 'true',
+    'paginationInput.entriesPerPage': '100',
+  });
+
+  const resp = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${params}`);
+  if (!resp.ok) throw new Error(`eBay API error: ${resp.status}`);
+  const data = await resp.json();
+
+  const items = data?.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.item || [];
+
+  const buckets = { raw: [], psa7: [], psa8: [], psa9: [], psa10: [] };
+
+  for (const item of items) {
+    const title = (item.title?.[0] || '').toLowerCase();
+    const price = parseFloat(item.sellingStatus?.[0]?.convertedCurrentPrice?.[0]?.['__value__'] || 0);
+    if (!price) continue;
+
+    if (title.includes('psa 10') || title.includes('psa10')) buckets.psa10.push(price);
+    else if (title.includes('psa 9') || title.includes('psa9')) buckets.psa9.push(price);
+    else if (title.includes('psa 8') || title.includes('psa8')) buckets.psa8.push(price);
+    else if (title.includes('psa 7') || title.includes('psa7')) buckets.psa7.push(price);
+    else if (!title.includes('psa') && !title.includes('bgs') && !title.includes('sgc')) buckets.raw.push(price);
+  }
+
+  function priceRange(arr) {
+    if (!arr.length) return { low: null, high: null };
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const low = sorted[Math.floor(sorted.length * 0.1)] ?? sorted[0];
+    const high = sorted[Math.floor(sorted.length * 0.9)] ?? sorted[sorted.length - 1];
+    return { low: Math.round(low), high: Math.round(high) };
+  }
+
+  return {
+    raw: priceRange(buckets.raw),
+    psa7: priceRange(buckets.psa7),
+    psa8: priceRange(buckets.psa8),
+    psa9: priceRange(buckets.psa9),
+    psa10: priceRange(buckets.psa10),
+  };
+}
+
+// --- Prompts ---
+
+const IDENTIFY_ONLY_PROMPT = `Return ONLY a JSON object with this exact structure:
+{
+  "player": "Player Name",
+  "year": "Year",
+  "brand": "Brand/Set Name",
+  "cardNumber": "Card # or null",
+  "attributes": ["rookie card", "autograph", etc — only notable attributes],
+  "confidence": "high/medium/low"
+}
+
+If you cannot identify this as a sports card, return all fields as null.`;
+
+const IDENTIFY_AND_PRICE_PROMPT = `Return ONLY a JSON object with this exact structure:
+{
+  "player": "Player Name",
+  "year": "Year",
+  "brand": "Brand/Set Name",
+  "cardNumber": "Card # or null",
+  "attributes": ["rookie card", "autograph", etc — only notable attributes],
+  "prices": {
+    "raw": { "low": 0, "high": 0 },
+    "psa7": { "low": 0, "high": 0 },
+    "psa8": { "low": 0, "high": 0 },
+    "psa9": { "low": 0, "high": 0 },
+    "psa10": { "low": 0, "high": 0 }
+  },
+  "pricingNotes": "Brief note on what drives value for this card",
+  "confidence": "high/medium/low"
+}
+
+Use recent eBay sold listings and PSA pop report data to estimate prices. Do not assess the condition of the card. If you cannot identify this as a sports card, return all fields as null and explain in pricingNotes.`;
+
 // --- Express app ---
 
 const app = express();
@@ -74,10 +164,12 @@ app.post('/api/auth', (req, res) => {
 });
 
 app.post('/api/analyze', authMiddleware, async (req, res) => {
-  const { frontData, backData } = req.body;
+  const { frontData, backData, mode } = req.body;
   if (!frontData) {
     return res.status(400).json({ error: 'At least a front image is required' });
   }
+
+  const ebayMode = mode === 'ebay';
 
   consumeUse(req.password);
   const remaining = req.remaining - 1;
@@ -93,48 +185,28 @@ app.post('/api/analyze', authMiddleware, async (req, res) => {
         { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: frontData } },
       ];
 
-  const promptText = backData
-    ? 'Using both the front and back of this card, identify it and provide current market prices by PSA grade.'
-    : 'Using the front of this card, identify it and provide current market prices by PSA grade.';
+  const sideText = backData
+    ? 'Using both the front and back of this card, identify it.'
+    : 'Using the front of this card, identify it.';
+
+  const promptText = ebayMode
+    ? `You are a sports card expert. ${sideText}\n\n${IDENTIFY_ONLY_PROMPT}`
+    : `You are a sports card expert and pricing specialist. ${sideText} Provide current market prices by PSA grade.\n\n${IDENTIFY_AND_PRICE_PROMPT}`;
 
   try {
     const stream = await client.messages.stream({
       model: 'claude-opus-4-8',
-      max_tokens: 1024,
+      max_tokens: ebayMode ? 512 : 1024,
       messages: [
         {
           role: 'user',
           content: [
             ...imageContent,
-            {
-              type: 'text',
-              text: `You are a sports card expert and pricing specialist. ${promptText}
-
-Return ONLY a JSON object with this exact structure:
-{
-  "player": "Player Name",
-  "year": "Year",
-  "brand": "Brand/Set Name",
-  "cardNumber": "Card # or null",
-  "attributes": ["rookie card", "autograph", etc — only notable attributes],
-  "prices": {
-    "raw": { "low": 0, "high": 0 },
-    "psa7": { "low": 0, "high": 0 },
-    "psa8": { "low": 0, "high": 0 },
-    "psa9": { "low": 0, "high": 0 },
-    "psa10": { "low": 0, "high": 0 }
-  },
-  "pricingNotes": "Brief note on what drives value for this card",
-  "confidence": "high/medium/low"
-}
-
-Use recent eBay sold listings and PSA pop report data to estimate prices. Do not assess the condition of the card. If you cannot identify this as a sports card, return all fields as null and explain in pricingNotes.`,
-            },
+            { type: 'text', text: promptText },
           ],
         },
       ],
     });
-
 
     const message = await stream.finalMessage();
     let responseText = '';
@@ -143,12 +215,26 @@ Use recent eBay sold listings and PSA pop report data to estimate prices. Do not
     }
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const cardData = JSON.parse(jsonMatch[0]);
-      res.json({ success: true, card: cardData, remaining });
-    } else {
-      res.json({ success: true, card: null, raw: responseText, remaining });
+    if (!jsonMatch) {
+      return res.json({ success: true, card: null, raw: responseText, remaining });
     }
+
+    const cardData = JSON.parse(jsonMatch[0]);
+
+    if (ebayMode && cardData.player) {
+      try {
+        const prices = await fetchEbayPrices(cardData);
+        cardData.prices = prices;
+        cardData.pricingNotes = 'Prices from recent eBay sold listings.';
+      } catch (ebayErr) {
+        console.error('eBay API error:', ebayErr);
+        cardData.pricingNotes = 'eBay price fetch failed. Try AI mode for estimated prices.';
+      }
+    }
+
+    const searchQuery = [cardData.year, cardData.brand, cardData.player, cardData.cardNumber ? `#${cardData.cardNumber}` : null, 'sports card']
+      .filter(Boolean).join(' ');
+    res.json({ success: true, card: cardData, ebayUrl: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}`, remaining });
   } catch (err) {
     console.error('Claude API error:', err);
     res.status(500).json({ error: err.message || 'Failed to analyze card' });
@@ -156,44 +242,40 @@ Use recent eBay sold listings and PSA pop report data to estimate prices. Do not
 });
 
 app.post('/api/lookup', authMiddleware, async (req, res) => {
-  const { description } = req.body;
+  const { description, mode } = req.body;
   if (!description || !description.trim()) {
     return res.status(400).json({ error: 'No description provided' });
   }
 
+  const ebayMode = mode === 'ebay';
+
   consumeUse(req.password);
   const remaining = req.remaining - 1;
+
+  const promptText = ebayMode
+    ? `You are a sports card expert. The user has described a sports card: "${description.trim()}"
+
+Identify the card based on this description.
+
+${IDENTIFY_ONLY_PROMPT}
+
+If the description is too vague to identify a specific card, set confidence to "low". If you cannot identify any matching card, return all fields as null.`
+    : `You are a sports card expert and pricing specialist. The user has described a sports card: "${description.trim()}"
+
+Based on this description, provide current market prices by PSA grade.
+
+${IDENTIFY_AND_PRICE_PROMPT}
+
+If the description is too vague to identify a specific card, set confidence to "low" and provide your best estimate. If you cannot identify any matching card, return all price fields as null and explain in pricingNotes.`;
 
   try {
     const stream = await client.messages.stream({
       model: 'claude-opus-4-8',
-      max_tokens: 1024,
+      max_tokens: ebayMode ? 512 : 1024,
       messages: [
         {
           role: 'user',
-          content: `You are a sports card expert and pricing specialist. The user has described a sports card: "${description.trim()}"
-
-Based on this description, provide current market prices by PSA grade.
-
-Return ONLY a JSON object with this exact structure:
-{
-  "player": "Player Name",
-  "year": "Year",
-  "brand": "Brand/Set Name",
-  "cardNumber": "Card # or null",
-  "attributes": ["rookie card", "autograph", etc — only notable attributes],
-  "prices": {
-    "raw": { "low": 0, "high": 0 },
-    "psa7": { "low": 0, "high": 0 },
-    "psa8": { "low": 0, "high": 0 },
-    "psa9": { "low": 0, "high": 0 },
-    "psa10": { "low": 0, "high": 0 }
-  },
-  "pricingNotes": "Brief note on what drives value for this card",
-  "confidence": "high/medium/low"
-}
-
-Use recent eBay sold listings and PSA pop report data to estimate prices. If the description is too vague to identify a specific card, set confidence to "low" and provide your best estimate. If you cannot identify any matching card, return all price fields as null and explain in pricingNotes.`,
+          content: promptText,
         },
       ],
     });
@@ -205,14 +287,26 @@ Use recent eBay sold listings and PSA pop report data to estimate prices. If the
     }
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const cardData = JSON.parse(jsonMatch[0]);
-      const searchQuery = [cardData.year, cardData.brand, cardData.player, cardData.cardNumber ? `#${cardData.cardNumber}` : null, 'sports card']
-        .filter(Boolean).join(' ');
-      res.json({ success: true, card: cardData, ebayUrl: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}`, remaining });
-    } else {
-      res.json({ success: true, card: null, raw: responseText, remaining });
+    if (!jsonMatch) {
+      return res.json({ success: true, card: null, raw: responseText, remaining });
     }
+
+    const cardData = JSON.parse(jsonMatch[0]);
+
+    if (ebayMode && cardData.player) {
+      try {
+        const prices = await fetchEbayPrices(cardData);
+        cardData.prices = prices;
+        cardData.pricingNotes = 'Prices from recent eBay sold listings.';
+      } catch (ebayErr) {
+        console.error('eBay API error:', ebayErr);
+        cardData.pricingNotes = 'eBay price fetch failed. Try AI mode for estimated prices.';
+      }
+    }
+
+    const searchQuery = [cardData.year, cardData.brand, cardData.player, cardData.cardNumber ? `#${cardData.cardNumber}` : null, 'sports card']
+      .filter(Boolean).join(' ');
+    res.json({ success: true, card: cardData, ebayUrl: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchQuery)}`, remaining });
   } catch (err) {
     console.error('Claude API error:', err);
     res.status(500).json({ error: err.message || 'Failed to look up card' });
