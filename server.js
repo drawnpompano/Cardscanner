@@ -57,38 +57,50 @@ function authMiddleware(req, res, next) {
 
 // --- eBay price fetch ---
 
+async function getEbayOAuthToken() {
+  const credentials = Buffer.from(`${process.env.EBAY_APP_ID}:${process.env.EBAY_CERT_ID}`).toString('base64');
+  const resp = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials&scope=https%3A%2F%2Fapi.ebay.com%2Foauth%2Fapi_scope',
+  });
+  if (!resp.ok) throw new Error(`eBay OAuth error: ${resp.status}`);
+  const data = await resp.json();
+  return data.access_token;
+}
+
 async function fetchEbayPrices(cardData) {
   const { player, year, brand, cardNumber } = cardData;
   const query = [year, brand, player, cardNumber ? `#${cardNumber}` : null]
     .filter(Boolean).join(' ');
 
+  const token = await getEbayOAuthToken();
+
   const params = new URLSearchParams({
-    'OPERATION-NAME': 'findCompletedItems',
-    'SERVICE-VERSION': '1.0.0',
-    'SECURITY-APPNAME': process.env.EBAY_APP_ID,
-    'RESPONSE-DATA-FORMAT': 'JSON',
-    'keywords': query,
-    'itemFilter(0).name': 'SoldItemsOnly',
-    'itemFilter(0).value': 'true',
-    'paginationInput.entriesPerPage': '100',
+    q: query,
+    filter: 'soldItems:true',
+    limit: '100',
   });
 
-  const resp = await fetch(`https://svcs.ebay.com/services/search/FindingService/v1?${params}`);
+  const resp = await fetch(`https://api.ebay.com/buy/browse/v1/item_summary/search?${params}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
+    },
+  });
+
   if (!resp.ok) throw new Error(`eBay API error: ${resp.status}`);
   const data = await resp.json();
-
-  const ackValue = data?.findCompletedItemsResponse?.[0]?.ack?.[0];
-  if (ackValue !== 'Success') {
-    throw new Error(`eBay Finding API error: ${JSON.stringify(data?.findCompletedItemsResponse?.[0]?.errorMessage)}`);
-  }
-
-  const items = data?.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.item || [];
+  const items = data.itemSummaries || [];
 
   const buckets = { raw: [], psa7: [], psa8: [], psa9: [], psa10: [] };
 
   for (const item of items) {
-    const title = (item.title?.[0] || '').toLowerCase();
-    const price = parseFloat(item.sellingStatus?.[0]?.convertedCurrentPrice?.[0]?.['__value__'] || 0);
+    const title = (item.title || '').toLowerCase();
+    const price = parseFloat(item.price?.value || 0);
     if (!price) continue;
 
     if (title.includes('psa 10') || title.includes('psa10')) buckets.psa10.push(price);
