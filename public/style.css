@@ -140,6 +140,16 @@ main {
   font-size: 0.8rem;
 }
 
+.days-select {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
 .scan-mode-toggle {
   display: flex;
   gap: 0.5rem;

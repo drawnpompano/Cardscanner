@@ -72,17 +72,22 @@ async function getEbayOAuthToken() {
   return data.access_token;
 }
 
-async function fetchEbayPrices(cardData) {
+async function fetchEbayPrices(cardData, days) {
   const { player, year, brand, cardNumber } = cardData;
   const query = [year, brand, player, cardNumber ? `#${cardNumber}` : null]
     .filter(Boolean).join(' ');
 
   const token = await getEbayOAuthToken();
 
-  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('.')[0] + 'Z';
+  let filter = 'soldItems:true';
+  if (days && days > 0) {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('.')[0] + 'Z';
+    filter += `,soldDate:[${since}..]`;
+  }
+
   const params = new URLSearchParams({
     q: query,
-    filter: `soldItems:true,soldDate:[${since}..]`,
+    filter,
     limit: '100',
   });
 
@@ -181,7 +186,7 @@ app.post('/api/auth', (req, res) => {
 });
 
 app.post('/api/analyze', authMiddleware, async (req, res) => {
-  const { frontData, backData, mode } = req.body;
+  const { frontData, backData, mode, days } = req.body;
   if (!frontData) {
     return res.status(400).json({ error: 'At least a front image is required' });
   }
@@ -240,7 +245,7 @@ app.post('/api/analyze', authMiddleware, async (req, res) => {
 
     if (ebayMode && cardData.player) {
       try {
-        const prices = await fetchEbayPrices(cardData);
+        const prices = await fetchEbayPrices(cardData, days);
         cardData.prices = prices;
         cardData.pricingNotes = 'Prices from recent eBay sold listings.';
       } catch (ebayErr) {
@@ -259,7 +264,7 @@ app.post('/api/analyze', authMiddleware, async (req, res) => {
 });
 
 app.post('/api/lookup', authMiddleware, async (req, res) => {
-  const { description, mode } = req.body;
+  const { description, mode, days } = req.body;
   if (!description || !description.trim()) {
     return res.status(400).json({ error: 'No description provided' });
   }
@@ -312,7 +317,7 @@ If the description is too vague to identify a specific card, set confidence to "
 
     if (ebayMode && cardData.player) {
       try {
-        const prices = await fetchEbayPrices(cardData);
+        const prices = await fetchEbayPrices(cardData, days);
         cardData.prices = prices;
         cardData.pricingNotes = 'Prices from recent eBay sold listings.';
       } catch (ebayErr) {

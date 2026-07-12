@@ -244,6 +244,7 @@ function setPricingMode(mode) {
   pricingMode = mode;
   document.getElementById('pricing-ebay').classList.toggle('active', mode === 'ebay');
   document.getElementById('pricing-ai').classList.toggle('active', mode === 'ai');
+  document.getElementById('ebay-date-bar').style.display = mode === 'ebay' ? '' : 'none';
 }
 
 document.getElementById('mode-both').addEventListener('click', () => setScanMode('both'));
@@ -373,6 +374,7 @@ async function analyzeCard() {
         backData: scanMode === 'both' ? capturedBack : null,
         password: sessionPassword,
         mode: pricingMode,
+        days: parseInt(document.getElementById('ebay-days').value),
       }),
     });
 
@@ -498,7 +500,7 @@ async function lookUpByDescription() {
     const res = await fetch('/api/lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: text, password: sessionPassword, mode: pricingMode }),
+      body: JSON.stringify({ description: text, password: sessionPassword, mode: pricingMode, days: parseInt(document.getElementById('ebay-days').value) }),
     });
 
     const data = await res.json();
