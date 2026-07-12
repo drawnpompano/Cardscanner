@@ -79,9 +79,10 @@ async function fetchEbayPrices(cardData) {
 
   const token = await getEbayOAuthToken();
 
+  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('.')[0] + 'Z';
   const params = new URLSearchParams({
     q: query,
-    filter: 'soldItems:true',
+    filter: `soldItems:true,soldDate:[${since}..]`,
     limit: '100',
   });
 
