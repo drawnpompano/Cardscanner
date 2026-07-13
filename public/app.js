@@ -313,12 +313,10 @@ function captureFrame() {
       backPreviewImg.style.display = 'block';
     }
     stopCamera();
-    document.querySelector('.preview-area').style.display = 'none';
-    scanInstruction.style.display = 'none';
-    scanOverlay.classList.remove('active');
-    captureBtn.style.display = 'none';
-    retakeBtn.style.display = 'inline-flex';
+    document.querySelector('.camera-section').style.display = 'none';
+    analyzeBtn.style.display = 'inline-flex';
     analyzeBtn.disabled = false;
+    retakeBtn.style.display = 'inline-flex';
   } else {
     capturedFront = imageData;
     frontPreviewImg.src = dataUrl;
@@ -465,8 +463,11 @@ function showError(msg) {
 }
 
 function resetToStart() {
+  document.querySelector('.camera-section').style.display = '';
   document.querySelector('.preview-area').style.display = '';
   scanInstruction.style.display = '';
+  analyzeBtn.style.display = 'none';
+  analyzeBtn.disabled = true;
   stopCamera();
   capturedFront = null;
   capturedBack = null;
