@@ -234,7 +234,6 @@ let stream = null;
 let capturedFront = null;
 let capturedBack = null;
 let scanStep = 'front';
-let scanMode = 'both';
 let pricingMode = 'ebay';
 
 document.getElementById('pricing-ebay').addEventListener('click', () => setPricingMode('ebay'));
@@ -245,19 +244,6 @@ function setPricingMode(mode) {
   document.getElementById('pricing-ebay').classList.toggle('active', mode === 'ebay');
   document.getElementById('pricing-ai').classList.toggle('active', mode === 'ai');
   document.getElementById('ebay-date-bar').style.display = mode === 'ebay' ? '' : 'none';
-}
-
-document.getElementById('mode-both').addEventListener('click', () => setScanMode('both'));
-document.getElementById('mode-one').addEventListener('click', () => setScanMode('one'));
-
-function setScanMode(mode) {
-  scanMode = mode;
-  document.getElementById('mode-both').classList.toggle('active', mode === 'both');
-  document.getElementById('mode-one').classList.toggle('active', mode === 'one');
-  document.getElementById('placeholder-text').textContent =
-    mode === 'both' ? 'Open your camera to scan both sides of the card'
-                    : 'Open your camera to scan the front of the card';
-  resetToStart();
 }
 
 function setStep(step) {
@@ -299,17 +285,10 @@ function captureFrame() {
   const imageData = dataUrl.split(',')[1];
 
   const sidePreviews = document.querySelector('.side-previews');
-  if (scanMode === 'one' || scanStep === 'back') {
-    if (scanMode === 'one') {
-      capturedFront = imageData;
-      frontPreviewImg.src = dataUrl;
-      frontPreviewImg.style.display = 'block';
-      sidePreviews.classList.add('visible');
-    } else {
-      capturedBack = imageData;
-      backPreviewImg.src = dataUrl;
-      backPreviewImg.style.display = 'block';
-    }
+  if (scanStep === 'back') {
+    capturedBack = imageData;
+    backPreviewImg.src = dataUrl;
+    backPreviewImg.style.display = 'block';
     stopCamera();
     document.querySelector('.preview-area').style.display = 'none';
     scanInstruction.style.display = 'none';
@@ -339,21 +318,13 @@ function retake() {
   // If the back has already been captured (analyze ready), retaking means starting over from the front.
   // If we're mid-flow on the back step (camera live), only clear the back.
   // In both-sides mode, retake always goes back to front regardless of step
-  if (scanMode === 'both') {
-    resetToStart();
-    startCamera();
-  } else {
-    capturedFront = null;
-    frontPreviewImg.style.display = 'none';
-    frontPreviewImg.src = '';
-    retakeBtn.style.display = 'none';
-    startCamera();
-  }
+  resetToStart();
+  startCamera();
 }
 
 async function analyzeCard() {
   if (!capturedFront) return;
-  if (scanMode === 'both' && !capturedBack) return;
+  if (!capturedBack) return;
 
   analyzingOverlay.classList.add('active');
   analyzeBtn.disabled = true;
@@ -365,7 +336,7 @@ async function analyzeCard() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         frontData: capturedFront,
-        backData: scanMode === 'both' ? capturedBack : null,
+        backData: capturedBack,
         password: sessionPassword,
         mode: pricingMode,
         days: parseInt(document.getElementById('ebay-days').value),
