@@ -122,7 +122,7 @@ main {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  margin: 0.75rem 1rem 0;
+  margin-bottom: 0;
   gap: 1rem;
 }
 
