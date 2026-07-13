@@ -318,8 +318,7 @@ function captureFrame() {
       backPreviewImg.style.display = 'block';
     }
     stopCamera();
-    video.style.display = 'none';
-    placeholder.style.display = 'none';
+    document.querySelector('.preview-area').style.display = 'none';
     scanOverlay.classList.remove('active');
     captureBtn.style.display = 'none';
     retakeBtn.style.display = 'inline-flex';
@@ -470,6 +469,7 @@ function showError(msg) {
 }
 
 function resetToStart() {
+  document.querySelector('.preview-area').style.display = '';
   stopCamera();
   capturedFront = null;
   capturedBack = null;

@@ -88,20 +88,20 @@
 
         <div id="scan-instruction" class="scan-instruction">Scan the <strong>front</strong> of the card</div>
 
+        <div class="side-previews">
+          <div class="side-preview" id="front-preview-box">
+            <img id="front-preview-img" alt="Front of card" style="display:none" class="preview-clickable" />
+            <div class="side-preview-label">Front</div>
+          </div>
+          <div class="side-preview" id="back-preview-box">
+            <img id="back-preview-img" alt="Back of card" style="display:none" class="preview-clickable" />
+            <div class="side-preview-label">Back</div>
+          </div>
+        </div>
+
         <div class="preview-area">
           <video id="video" playsinline autoplay muted></video>
           <canvas id="canvas"></canvas>
-
-          <div class="side-previews">
-            <div class="side-preview" id="front-preview-box">
-              <img id="front-preview-img" alt="Front of card" style="display:none" class="preview-clickable" />
-              <div class="side-preview-label">Front</div>
-            </div>
-            <div class="side-preview" id="back-preview-box">
-              <img id="back-preview-img" alt="Back of card" style="display:none" class="preview-clickable" />
-              <div class="side-preview-label">Back</div>
-            </div>
-          </div>
 
           <div id="placeholder" class="placeholder">
             <span class="icon">📸</span>
