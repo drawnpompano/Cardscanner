@@ -731,6 +731,31 @@ main {
   line-height: 1.5;
 }
 
+.preview-clickable { cursor: zoom-in; }
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+}
+
+.lightbox-img {
+  position: relative;
+  max-width: 92vw;
+  max-height: 88vh;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
 .ebay-link {
   display: block;
   margin: 1rem 0 0;

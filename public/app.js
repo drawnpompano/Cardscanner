@@ -384,6 +384,7 @@ async function analyzeCard() {
     if (data.remaining != null) updateScansDisplay(data.remaining);
     if (data.card) {
       addToHistory(data.card, null, 'scan');
+      document.querySelector('.camera-section').style.display = 'none';
       displayResults(data.card, null);
     } else if (data.raw) {
       showError('Could not parse card data. Raw response: ' + data.raw.substring(0, 200));
@@ -469,6 +470,7 @@ function showError(msg) {
 }
 
 function resetToStart() {
+  document.querySelector('.camera-section').style.display = '';
   stopCamera();
   capturedFront = null;
   capturedBack = null;
@@ -527,6 +529,23 @@ retakeBtn.addEventListener('click', retake);
 analyzeBtn.addEventListener('click', analyzeCard);
 scanAgainBtn.addEventListener('click', resetToStart);
 describeBtn.addEventListener('click', lookUpByDescription);
+
+// Lightbox
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+
+document.querySelectorAll('.preview-clickable').forEach((img) => {
+  img.addEventListener('click', () => {
+    if (!img.src || img.style.display === 'none') return;
+    lightboxImg.src = img.src;
+    lightbox.style.display = 'flex';
+  });
+});
+
+lightbox.addEventListener('click', () => {
+  lightbox.style.display = 'none';
+  lightboxImg.src = '';
+});
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
