@@ -104,10 +104,32 @@ async function fetchEbayPrices(cardData, days) {
 
   const buckets = { raw: [], psa7: [], psa8: [], psa9: [], psa10: [] };
 
+  // Keywords that indicate non-base variants that would skew base card prices
+  const EXCLUDE_KEYWORDS = [
+    'lot', 'bundle', 'auto ', 'autograph', 'rpa', 'patch',
+    'reprint', 'gold', 'silver', 'prizm', 'refractor', 'optic',
+    'press proof', 'holo', 'parallel', 'cracked ice', 'mosaic',
+    '/25', '/15', '/10', '/5', '/1', '1/1',
+  ];
+
+  // Build a card-variant keyword list from identified attributes to allow those through
+  const cardAttributes = (cardData.attributes || []).map(a => a.toLowerCase());
+  const isAutoCard = cardAttributes.some(a => a.includes('auto') || a.includes('autograph'));
+  const isPatchCard = cardAttributes.some(a => a.includes('patch'));
+
+  const excludeKeywords = EXCLUDE_KEYWORDS.filter(kw => {
+    if ((kw === 'auto ' || kw === 'autograph' || kw === 'rpa') && isAutoCard) return false;
+    if (kw === 'patch' && isPatchCard) return false;
+    return true;
+  });
+
   for (const item of items) {
     const title = (item.title || '').toLowerCase();
     const price = parseFloat(item.price?.value || 0);
     if (!price) continue;
+
+    // Skip listings that appear to be non-base variants
+    if (excludeKeywords.some(kw => title.includes(kw))) continue;
 
     if (title.includes('psa 10') || title.includes('psa10')) buckets.psa10.push(price);
     else if (title.includes('psa 9') || title.includes('psa9')) buckets.psa9.push(price);
