@@ -314,7 +314,7 @@ function captureFrame() {
     }
     stopCamera();
     document.querySelector('.camera-section').style.display = 'none';
-    analyzeBtn.style.display = 'inline-flex';
+    analyzeBtn.style.display = 'flex';
     analyzeBtn.disabled = false;
     retakeBtn.style.display = 'inline-flex';
   } else {
