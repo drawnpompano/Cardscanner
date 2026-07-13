@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cardscanner-v30';
+const CACHE_NAME = 'cardscanner-v31';
 const STATIC_ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', (event) => {

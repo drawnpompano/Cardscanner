@@ -254,7 +254,6 @@ function setScanMode(mode) {
   scanMode = mode;
   document.getElementById('mode-both').classList.toggle('active', mode === 'both');
   document.getElementById('mode-one').classList.toggle('active', mode === 'one');
-  document.getElementById('scan-steps').style.display = mode === 'both' ? 'flex' : 'none';
   document.getElementById('placeholder-text').textContent =
     mode === 'both' ? 'Open your camera to scan both sides of the card'
                     : 'Open your camera to scan the front of the card';
@@ -263,16 +262,10 @@ function setScanMode(mode) {
 
 function setStep(step) {
   scanStep = step;
-  const frontDot = document.querySelector('#step-front .step-dot');
-  const backDot = document.querySelector('#step-back .step-dot');
   if (step === 'front') {
     scanInstruction.innerHTML = 'Scan the <strong>front</strong> of the card';
-    frontDot.className = 'step-dot active';
-    backDot.className = 'step-dot';
   } else {
     scanInstruction.innerHTML = 'Now scan the <strong>back</strong> of the card';
-    frontDot.className = 'step-dot done';
-    backDot.className = 'step-dot active';
   }
 }
 
