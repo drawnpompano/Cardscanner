@@ -319,6 +319,7 @@ function captureFrame() {
     }
     stopCamera();
     video.style.display = 'none';
+    placeholder.style.display = 'none';
     scanOverlay.classList.remove('active');
     captureBtn.style.display = 'none';
     retakeBtn.style.display = 'inline-flex';
@@ -384,7 +385,6 @@ async function analyzeCard() {
     if (data.remaining != null) updateScansDisplay(data.remaining);
     if (data.card) {
       addToHistory(data.card, null, 'scan');
-      document.querySelector('.camera-section').style.display = 'none';
       displayResults(data.card, null);
     } else if (data.raw) {
       showError('Could not parse card data. Raw response: ' + data.raw.substring(0, 200));
@@ -470,7 +470,6 @@ function showError(msg) {
 }
 
 function resetToStart() {
-  document.querySelector('.camera-section').style.display = '';
   stopCamera();
   capturedFront = null;
   capturedBack = null;
