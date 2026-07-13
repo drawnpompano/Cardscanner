@@ -231,10 +231,7 @@ main {
 
 .side-previews {
   display: none;
-  position: absolute;
-  bottom: 0.75rem;
-  left: 50%;
-  transform: translateX(-50%);
+  justify-content: center;
   gap: 0.75rem;
   z-index: 5;
 }
