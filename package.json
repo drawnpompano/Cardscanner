@@ -1,6 +1,6 @@
 {
   "name": "cardscanner",
-  "version": "1.7.8",
+  "version": "1.7.9",
   "description": "Sports card price estimator PWA",
   "main": "server.js",
   "scripts": {
